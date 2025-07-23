@@ -26,7 +26,7 @@
   - Write widget tests for symbol selection interactions
   - _Requirements: 2.1, 2.2, 6.3_
 
-- [ ] 4. Implement score display and card reveal components
+- [x] 4. Implement score display and card reveal components
 
   - Create ScoreDisplayWidget showing "Score: X / 25" format
   - Build CardRevealWidget with placeholder and symbol reveal states
