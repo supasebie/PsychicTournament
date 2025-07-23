@@ -35,7 +35,7 @@
   - Write widget tests for display components
   - _Requirements: 4.1, 4.2, 6.2_
 
-- [ ] 5. Create feedback system and messaging
+- [x] 5. Create feedback system and messaging
 
   - Implement feedback message display for correct/incorrect guesses
   - Add "Correct!" and "Incorrect. The card was a [Symbol Name]" messages
@@ -44,7 +44,7 @@
   - Write tests for feedback timing and message accuracy
   - _Requirements: 3.1, 3.2, 3.3_
 
-- [ ] 6. Build main game screen and state management
+- [x] 6. Build main game screen and state management
 
   - Create ZenerGameScreen StatefulWidget as main game container
   - Implement game state management using setState pattern

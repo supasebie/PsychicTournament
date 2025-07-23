@@ -6,16 +6,11 @@ import 'package:psychictournament/widgets/symbol_selection_widget.dart';
 void main() {
   group('SymbolSelectionWidget', () {
     testWidgets('displays all five Zener symbols', (WidgetTester tester) async {
-      // Arrange
-      ZenerSymbol? selectedSymbol;
-
       // Act
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
-            body: SymbolSelectionWidget(
-              onSymbolSelected: (symbol) => selectedSymbol = symbol,
-            ),
+            body: SymbolSelectionWidget(onSymbolSelected: (symbol) {}),
           ),
         ),
       );
