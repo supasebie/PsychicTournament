@@ -1,6 +1,6 @@
 # Implementation Plan
 
-- [ ] 1. Set up core data models and enums
+- [x] 1. Set up core data models and enums
 
   - Create ZenerSymbol enum with all five symbols and extension methods
   - Implement GameState model with immutable properties and copyWith method
@@ -19,7 +19,7 @@
 
 - [ ] 3. Create symbol selection UI component
 
-  - Build SymbolSelectionWidget with five symbol buttons
+  - Build SymbolSelectionWidget with five symbol buttons using ZenerSymbol.iconData
   - Implement button styling and layout using Material Design
   - Add button enable/disable functionality for turn management
   - Create callback mechanism for symbol selection
