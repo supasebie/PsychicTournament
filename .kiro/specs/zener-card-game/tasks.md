@@ -8,7 +8,7 @@
   - Write unit tests for all data models
   - _Requirements: 1.1, 2.1, 3.1_
 
-- [ ] 2. Implement game controller and deck management
+- [x] 2. Implement game controller and deck management
 
   - Create GameController class with deck creation and shuffling logic
   - Implement Fisher-Yates shuffle algorithm for deck randomization
