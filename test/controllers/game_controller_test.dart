@@ -1,8 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:psychictournament/controllers/game_controller.dart';
 import 'package:psychictournament/models/zener_symbol.dart';
-import 'package:psychictournament/models/game_state.dart';
-import 'package:psychictournament/models/guess_result.dart';
 
 void main() {
   group('GameController', () {
