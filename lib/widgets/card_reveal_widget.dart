@@ -88,7 +88,7 @@ class _CardRevealWidgetState extends State<CardRevealWidget>
             ),
             boxShadow: [
               BoxShadow(
-                color: Theme.of(context).shadowColor.withOpacity(0.1),
+                color: Theme.of(context).shadowColor.withValues(alpha: 0.1),
                 blurRadius: 4.0,
                 offset: const Offset(0, 2),
               ),
@@ -149,13 +149,17 @@ class _CardRevealWidgetState extends State<CardRevealWidget>
             Icon(
               Icons.help_outline,
               size: 48.0,
-              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurface.withValues(alpha: 0.4),
             ),
             const SizedBox(height: 8.0),
             Text(
               '?',
               style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
+                color: Theme.of(
+                  context,
+                ).colorScheme.onSurface.withValues(alpha: 0.4),
                 fontWeight: FontWeight.bold,
               ),
             ),
