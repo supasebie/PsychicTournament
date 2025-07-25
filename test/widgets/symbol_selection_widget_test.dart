@@ -136,11 +136,12 @@ void main() {
 
       // Assert
       for (final symbol in ZenerSymbol.values) {
-        // Find the Semantics widget that has both the label and button properties
+        // Find the Semantics widget that has the enhanced label and button properties
         final semanticsWidgets = find.byWidgetPredicate(
           (widget) =>
               widget is Semantics &&
-              widget.properties.label == symbol.displayName &&
+              widget.properties.label ==
+                  '${symbol.displayName} symbol button' &&
               widget.properties.button == true,
         );
         expect(semanticsWidgets, findsOneWidget);
@@ -159,7 +160,7 @@ void main() {
         ),
       );
 
-      // Assert
+      // Assert - Check that buttons are properly sized
       final sizedBoxes = tester.widgetList<SizedBox>(
         find.descendant(
           of: find.byType(SymbolSelectionWidget),
@@ -167,9 +168,15 @@ void main() {
         ),
       );
 
-      // Find the SizedBoxes that wrap the buttons (80x80)
+      // Should have SizedBoxes for the buttons (responsive sizing between 60-80)
       final buttonSizedBoxes = sizedBoxes.where(
-        (box) => box.width == 80 && box.height == 80,
+        (box) =>
+            box.width != null &&
+            box.height != null &&
+            box.width! >= 60 &&
+            box.width! <= 80 &&
+            box.height! >= 60 &&
+            box.height! <= 80,
       );
 
       expect(buttonSizedBoxes.length, equals(5));
@@ -187,10 +194,11 @@ void main() {
         ),
       );
 
-      // Assert
+      // Assert - Icons should be responsive sized between 24-36
       final icons = tester.widgetList<Icon>(find.byType(Icon));
       for (final icon in icons) {
-        expect(icon.size, equals(32));
+        expect(icon.size, greaterThanOrEqualTo(24));
+        expect(icon.size, lessThanOrEqualTo(36));
       }
     });
   });

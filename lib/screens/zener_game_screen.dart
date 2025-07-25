@@ -6,6 +6,7 @@ import '../models/guess_result.dart';
 import '../widgets/symbol_selection_widget.dart';
 import '../widgets/score_display_widget.dart';
 import '../widgets/card_reveal_widget.dart';
+import '../widgets/final_score_dialog.dart';
 
 /// Main game screen that manages the complete Zener card game experience
 class ZenerGameScreen extends StatefulWidget {
@@ -25,9 +26,12 @@ class _ZenerGameScreenState extends State<ZenerGameScreen> {
   ZenerSymbol? _revealedSymbol;
   String? _feedbackMessage;
   bool _isCardRevealed = false;
+  bool _debugMode = false;
 
-  // Timer for managing turn transitions
+  // Timers for managing turn transitions and feedback
   Timer? _turnTransitionTimer;
+  Timer? _feedbackTimer;
+  Timer? _scoreUpdateTimer;
 
   @override
   void initState() {
@@ -38,20 +42,37 @@ class _ZenerGameScreenState extends State<ZenerGameScreen> {
   @override
   void dispose() {
     _turnTransitionTimer?.cancel();
+    _feedbackTimer?.cancel();
+    _scoreUpdateTimer?.cancel();
     super.dispose();
   }
 
   /// Initializes a new game with fresh state
   void _initializeGame() {
-    _gameController = GameController();
-    setState(() {
-      _currentScore = _gameController.getCurrentScore();
-      _currentTurn = _gameController.getCurrentTurn();
-      _buttonsEnabled = true;
-      _revealedSymbol = null;
-      _feedbackMessage = null;
-      _isCardRevealed = false;
-    });
+    try {
+      _gameController = GameController();
+      setState(() {
+        _currentScore = _gameController.getCurrentScore();
+        _currentTurn = _gameController.getCurrentTurn();
+        _buttonsEnabled = true;
+        _revealedSymbol = null;
+        _feedbackMessage = null;
+        _isCardRevealed = false;
+        // Note: _debugMode is intentionally not reset to preserve user preference
+      });
+    } catch (e) {
+      // Handle initialization errors gracefully
+      debugPrint('Error initializing game: $e');
+      // Fallback to safe default state
+      setState(() {
+        _currentScore = 0;
+        _currentTurn = 1;
+        _buttonsEnabled = false;
+        _revealedSymbol = null;
+        _feedbackMessage = 'Error initializing game. Please restart.';
+        _isCardRevealed = false;
+      });
+    }
   }
 
   /// Handles symbol selection from the user
@@ -60,29 +81,74 @@ class _ZenerGameScreenState extends State<ZenerGameScreen> {
       return;
     }
 
-    // Disable buttons during guess processing
+    // Disable buttons immediately during guess processing
     setState(() {
       _buttonsEnabled = false;
     });
 
-    // Process the guess
-    final GuessResult result = _gameController.makeGuess(selectedSymbol);
+    try {
+      // Process the guess
+      final GuessResult result = _gameController.makeGuess(selectedSymbol);
 
-    // Update UI with guess result
-    setState(() {
-      _currentScore = result.newScore;
-      _currentTurn = _gameController.getCurrentTurn();
-      _revealedSymbol = result.correctSymbol;
-      _isCardRevealed = true;
-      _feedbackMessage = _generateFeedbackMessage(result);
-    });
+      // Update UI with card reveal first (immediate)
+      setState(() {
+        _revealedSymbol = result.correctSymbol;
+        _isCardRevealed = true;
+        _feedbackMessage = _generateFeedbackMessage(result);
+      });
 
-    // Check if game is complete
-    if (_gameController.isGameComplete()) {
-      _handleGameCompletion();
-    } else {
-      // Set timer for turn transition
-      _startTurnTransition();
+      // Update score immediately if correct (as per requirement 4.2)
+      if (result.isCorrect) {
+        setState(() {
+          _currentScore = result.newScore;
+        });
+      } else {
+        // For incorrect guesses, delay score update slightly for better UX
+        _scoreUpdateTimer?.cancel();
+        _scoreUpdateTimer = Timer(const Duration(milliseconds: 300), () {
+          if (mounted) {
+            setState(() {
+              _currentScore = result.newScore;
+            });
+          }
+        });
+      }
+
+      // Update turn counter after a brief delay for smooth transition
+      _scoreUpdateTimer?.cancel();
+      _scoreUpdateTimer = Timer(const Duration(milliseconds: 100), () {
+        if (mounted) {
+          setState(() {
+            _currentTurn = _gameController.getCurrentTurn();
+          });
+        }
+      });
+
+      // Check if game is complete
+      if (_gameController.isGameComplete()) {
+        _handleGameCompletion();
+      } else {
+        // Set timer for turn transition with improved timing
+        _startTurnTransition();
+      }
+    } catch (e) {
+      // Handle guess processing errors gracefully
+      debugPrint('Error processing guess: $e');
+      setState(() {
+        _buttonsEnabled = true;
+        _feedbackMessage = 'Error processing guess. Please try again.';
+        _isCardRevealed = false;
+        _revealedSymbol = null;
+      });
+
+      // Clear error message after a delay
+      Timer(const Duration(seconds: 2), () {
+        if (mounted) {
+          setState(() {
+            _feedbackMessage = null;
+          });
+        }
+      });
     }
   }
 
@@ -95,23 +161,43 @@ class _ZenerGameScreenState extends State<ZenerGameScreen> {
     }
   }
 
-  /// Starts the turn transition timer
+  /// Starts the turn transition timer with improved timing sequence
   void _startTurnTransition() {
     _turnTransitionTimer?.cancel();
-    _turnTransitionTimer = Timer(const Duration(milliseconds: 2000), () {
+
+    // Phase 1: Show feedback for 1.5 seconds (requirement 3.3)
+    _feedbackTimer?.cancel();
+    _feedbackTimer = Timer(const Duration(milliseconds: 1500), () {
       if (mounted) {
-        _resetForNextTurn();
+        _beginTurnReset();
       }
     });
   }
 
-  /// Resets UI state for the next turn
-  void _resetForNextTurn() {
+  /// Begins the turn reset sequence with smooth transitions
+  void _beginTurnReset() {
+    // Phase 2: Start hiding feedback and card (smooth transition)
     setState(() {
-      _revealedSymbol = null;
       _feedbackMessage = null;
-      _isCardRevealed = false;
-      _buttonsEnabled = true;
+    });
+
+    // Phase 3: Hide card after brief delay for smooth animation
+    Timer(const Duration(milliseconds: 200), () {
+      if (mounted) {
+        setState(() {
+          _isCardRevealed = false;
+          _revealedSymbol = null;
+        });
+      }
+    });
+
+    // Phase 4: Re-enable buttons after card is hidden (requirement 6.4)
+    Timer(const Duration(milliseconds: 500), () {
+      if (mounted) {
+        setState(() {
+          _buttonsEnabled = true;
+        });
+      }
     });
   }
 
@@ -127,185 +213,440 @@ class _ZenerGameScreenState extends State<ZenerGameScreen> {
 
   /// Shows the final score dialog with play again option
   void _showFinalScoreDialog() {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text(
-            'Game Complete!',
-            textAlign: TextAlign.center,
-            style: TextStyle(fontWeight: FontWeight.bold),
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                _currentScore >= 13 ? Icons.star : Icons.psychology,
-                size: 48,
-                color: _currentScore >= 13 ? Colors.amber : Colors.blue,
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'You scored $_currentScore out of 25',
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w500,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                _getScoreDescription(_currentScore),
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Theme.of(
-                    context,
-                  ).colorScheme.onSurface.withValues(alpha: 0.7),
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ],
-          ),
-          actions: [
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: _playAgain,
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                ),
-                child: const Text(
-                  'Play Again',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                ),
-              ),
-            ),
-          ],
-        );
-      },
-    );
-  }
+    if (!mounted) return;
 
-  /// Returns a description based on the final score
-  String _getScoreDescription(int score) {
-    if (score >= 20) return 'Exceptional psychic ability!';
-    if (score >= 15) return 'Strong psychic potential!';
-    if (score >= 10) return 'Good psychic awareness!';
-    if (score >= 5) return 'Some psychic sensitivity detected.';
-    return 'Keep practicing your psychic abilities!';
+    try {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (BuildContext context) {
+          return FinalScoreDialog(
+            score: _currentScore,
+            onPlayAgain: _playAgain,
+          );
+        },
+      );
+    } catch (e) {
+      debugPrint('Error showing final score dialog: $e');
+      // Fallback: just reset the game
+      _playAgain();
+    }
   }
 
   /// Starts a new game
   void _playAgain() {
     Navigator.of(context).pop(); // Close dialog
+
+    // Cancel all timers to ensure clean state
     _turnTransitionTimer?.cancel();
+    _feedbackTimer?.cancel();
+    _scoreUpdateTimer?.cancel();
+
     _initializeGame();
+  }
+
+  /// Toggles debug mode on/off
+  void _toggleDebugMode() {
+    setState(() {
+      _debugMode = !_debugMode;
+    });
+  }
+
+  /// Gets the next three cards in the deck for debug display
+  List<ZenerSymbol> _getNextThreeCards() {
+    final List<ZenerSymbol> nextCards = [];
+    final deck = _gameController.gameState.deck;
+
+    for (int i = 0; i < 3; i++) {
+      final cardIndex = (_currentTurn - 1) + i;
+      if (cardIndex < deck.length) {
+        nextCards.add(deck[cardIndex]);
+      }
+    }
+
+    return nextCards;
+  }
+
+  /// Builds the debug panel showing next three cards
+  Widget _buildDebugPanel() {
+    if (!_debugMode) return const SizedBox.shrink();
+
+    final nextCards = _getNextThreeCards();
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.red.shade50,
+        border: Border.all(color: Colors.red.shade300, width: 2),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.bug_report, color: Colors.red.shade700, size: 16),
+              const SizedBox(width: 4),
+              Text(
+                'DEBUG MODE',
+                style: TextStyle(
+                  color: Colors.red.shade700,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 12,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Next cards:',
+            style: TextStyle(
+              color: Colors.red.shade700,
+              fontWeight: FontWeight.w600,
+              fontSize: 14,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Wrap(
+            spacing: 8,
+            children: nextCards.asMap().entries.map((entry) {
+              final index = entry.key;
+              final symbol = entry.value;
+              final turnNumber = _currentTurn + index;
+
+              return Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: index == 0 ? Colors.red.shade100 : Colors.red.shade50,
+                  borderRadius: BorderRadius.circular(4),
+                  border: Border.all(
+                    color: index == 0
+                        ? Colors.red.shade400
+                        : Colors.red.shade200,
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      '$turnNumber:',
+                      style: TextStyle(
+                        color: Colors.red.shade700,
+                        fontSize: 12,
+                        fontWeight: index == 0
+                            ? FontWeight.bold
+                            : FontWeight.normal,
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    Icon(symbol.iconData, size: 16, color: Colors.red.shade700),
+                    const SizedBox(width: 2),
+                    Text(
+                      symbol.displayName,
+                      style: TextStyle(
+                        color: Colors.red.shade700,
+                        fontSize: 12,
+                        fontWeight: index == 0
+                            ? FontWeight.bold
+                            : FontWeight.normal,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }).toList(),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          'Psychic Tournament',
-          style: TextStyle(fontWeight: FontWeight.bold),
+        title: AnimatedDefaultTextStyle(
+          duration: const Duration(milliseconds: 300),
+          style: const TextStyle(fontWeight: FontWeight.bold),
+          child: const Text('Psychic Tournament'),
         ),
         backgroundColor: Theme.of(context).colorScheme.primaryContainer,
         foregroundColor: Theme.of(context).colorScheme.onPrimaryContainer,
         elevation: 0,
         centerTitle: true,
+        actions: [
+          // Debug mode toggle with animation
+          Padding(
+            padding: const EdgeInsets.only(right: 8.0),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  child: Icon(
+                    Icons.bug_report,
+                    size: 16,
+                    color: _debugMode
+                        ? Colors.red.shade700
+                        : Theme.of(context).colorScheme.onPrimaryContainer
+                              .withValues(alpha: 0.6),
+                  ),
+                ),
+                const SizedBox(width: 4),
+                AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 200),
+                  child: Switch(
+                    key: ValueKey(_debugMode),
+                    value: _debugMode,
+                    onChanged: (_) => _toggleDebugMode(),
+                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    activeThumbColor: Colors.red.shade700,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(16.0),
-          child: Column(
-            children: [
-              // Game info section
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  ScoreDisplayWidget(score: _currentScore),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.secondaryContainer,
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: Text(
-                      'Turn $_currentTurn / 25',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.onSecondaryContainer,
-                      ),
-                    ),
+          child: SingleChildScrollView(
+            physics: const BouncingScrollPhysics(),
+            child: Column(
+              children: [
+                // Game info section with animations
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeInOut,
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      // Use column layout on very narrow screens
+                      if (constraints.maxWidth < 300) {
+                        return Column(
+                          children: [
+                            AnimatedSwitcher(
+                              duration: const Duration(milliseconds: 400),
+                              transitionBuilder: (child, animation) {
+                                return SlideTransition(
+                                  position: Tween<Offset>(
+                                    begin: const Offset(-0.5, 0),
+                                    end: Offset.zero,
+                                  ).animate(animation),
+                                  child: FadeTransition(
+                                    opacity: animation,
+                                    child: child,
+                                  ),
+                                );
+                              },
+                              child: ScoreDisplayWidget(
+                                key: ValueKey(_currentScore),
+                                score: _currentScore,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            AnimatedContainer(
+                              duration: const Duration(milliseconds: 300),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 6,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.secondaryContainer,
+                                borderRadius: BorderRadius.circular(6),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Theme.of(
+                                      context,
+                                    ).shadowColor.withValues(alpha: 0.1),
+                                    blurRadius: 4,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
+                              ),
+                              child: AnimatedSwitcher(
+                                duration: const Duration(milliseconds: 300),
+                                child: Text(
+                                  'Turn $_currentTurn / 25',
+                                  key: ValueKey(_currentTurn),
+                                  style: Theme.of(context).textTheme.bodyMedium
+                                      ?.copyWith(
+                                        fontWeight: FontWeight.w600,
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.onSecondaryContainer,
+                                      ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        );
+                      }
+
+                      // Use row layout for wider screens with flexible widgets
+                      return Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Flexible(
+                            child: AnimatedSwitcher(
+                              duration: const Duration(milliseconds: 400),
+                              transitionBuilder: (child, animation) {
+                                return SlideTransition(
+                                  position: Tween<Offset>(
+                                    begin: const Offset(-0.5, 0),
+                                    end: Offset.zero,
+                                  ).animate(animation),
+                                  child: FadeTransition(
+                                    opacity: animation,
+                                    child: child,
+                                  ),
+                                );
+                              },
+                              child: ScoreDisplayWidget(
+                                key: ValueKey(_currentScore),
+                                score: _currentScore,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Flexible(
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 300),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 6,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.secondaryContainer,
+                                borderRadius: BorderRadius.circular(6),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Theme.of(
+                                      context,
+                                    ).shadowColor.withValues(alpha: 0.1),
+                                    blurRadius: 4,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
+                              ),
+                              child: AnimatedSwitcher(
+                                duration: const Duration(milliseconds: 300),
+                                child: Text(
+                                  'Turn $_currentTurn / 25',
+                                  key: ValueKey(_currentTurn),
+                                  style: Theme.of(context).textTheme.bodyMedium
+                                      ?.copyWith(
+                                        fontWeight: FontWeight.w600,
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.onSecondaryContainer,
+                                      ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      );
+                    },
                   ),
-                ],
-              ),
-
-              const SizedBox(height: 24),
-
-              // Remote viewing coordinates
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 8,
                 ),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
+
+                const SizedBox(height: 24),
+
+                // Debug panel with slide animation
+                AnimatedSize(
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeInOut,
+                  child: _buildDebugPanel(),
+                ),
+
+                // Remote viewing coordinates with subtle animation
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 300),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
                     color: Theme.of(
                       context,
-                    ).colorScheme.outline.withValues(alpha: 0.3),
-                  ),
-                ),
-                child: Column(
-                  children: [
-                    Text(
-                      'Remote Viewing Coordinates',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    ).colorScheme.surfaceContainerHighest,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.outline.withValues(alpha: 0.3),
+                    ),
+                    boxShadow: [
+                      BoxShadow(
                         color: Theme.of(
                           context,
-                        ).colorScheme.onSurface.withValues(alpha: 0.7),
+                        ).shadowColor.withValues(alpha: 0.05),
+                        blurRadius: 2,
+                        offset: const Offset(0, 1),
                       ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      _gameController.getRemoteViewingCoordinates(),
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        fontFamily: 'monospace',
+                    ],
+                  ),
+                  child: Column(
+                    children: [
+                      Text(
+                        'Coordinates',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.onSurface.withValues(alpha: 0.7),
+                        ),
                       ),
-                    ),
-                  ],
+                      const SizedBox(height: 4),
+                      AnimatedDefaultTextStyle(
+                        duration: const Duration(milliseconds: 300),
+                        style:
+                            Theme.of(context).textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              fontFamily: 'monospace',
+                            ) ??
+                            const TextStyle(),
+                        child: Text(
+                          _gameController.getRemoteViewingCoordinates(),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
 
-              const Spacer(),
+                const SizedBox(height: 64),
 
-              // Card reveal area
-              CardRevealWidget(
-                revealedSymbol: _revealedSymbol,
-                isRevealed: _isCardRevealed,
-                feedbackMessage: _feedbackMessage,
-              ),
+                // Card reveal area with enhanced animations
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeInOut,
+                  child: CardRevealWidget(
+                    revealedSymbol: _revealedSymbol,
+                    isRevealed: _isCardRevealed,
+                    feedbackMessage: _feedbackMessage,
+                  ),
+                ),
 
-              const Spacer(),
+                const SizedBox(height: 64),
 
-              // Symbol selection area
-              SymbolSelectionWidget(
-                onSymbolSelected: _onSymbolSelected,
-                buttonsEnabled: _buttonsEnabled,
-              ),
+                // Symbol selection area with staggered animations
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 400),
+                  curve: Curves.easeOutBack,
+                  child: SymbolSelectionWidget(
+                    onSymbolSelected: _onSymbolSelected,
+                    buttonsEnabled: _buttonsEnabled,
+                  ),
+                ),
 
-              const SizedBox(height: 16),
-            ],
+                const SizedBox(height: 16),
+              ],
+            ),
           ),
         ),
       ),

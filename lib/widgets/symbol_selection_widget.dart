@@ -27,27 +27,52 @@ class SymbolSelectionWidget extends StatelessWidget {
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
           ),
           const SizedBox(height: 16),
-          Wrap(
-            spacing: 12,
-            runSpacing: 12,
-            alignment: WrapAlignment.center,
-            children: ZenerSymbol.values.map((symbol) {
-              return _buildSymbolButton(context, symbol);
-            }).toList(),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              // Calculate responsive button size based on available width
+              final availableWidth = constraints.maxWidth;
+              final spacing = 8.0;
+              final buttonWidth = ((availableWidth - (4 * spacing)) / 5).clamp(
+                60.0,
+                80.0,
+              );
+              final buttonHeight = buttonWidth;
+
+              return Wrap(
+                spacing: spacing,
+                runSpacing: spacing,
+                alignment: WrapAlignment.center,
+                children: ZenerSymbol.values.map((symbol) {
+                  return _buildSymbolButton(
+                    context,
+                    symbol,
+                    buttonWidth,
+                    buttonHeight,
+                  );
+                }).toList(),
+              );
+            },
           ),
         ],
       ),
     );
   }
 
-  /// Builds an individual symbol button
-  Widget _buildSymbolButton(BuildContext context, ZenerSymbol symbol) {
+  /// Builds an individual symbol button with responsive sizing
+  Widget _buildSymbolButton(
+    BuildContext context,
+    ZenerSymbol symbol,
+    double buttonWidth,
+    double buttonHeight,
+  ) {
     return SizedBox(
-      width: 80,
-      height: 80,
+      width: buttonWidth,
+      height: buttonHeight,
       child: Semantics(
-        label: symbol.displayName,
+        label: '${symbol.displayName} symbol button',
+        hint: 'Tap to select ${symbol.displayName}',
         button: true,
+        enabled: buttonsEnabled,
         child: ElevatedButton(
           onPressed: buttonsEnabled ? () => onSymbolSelected(symbol) : null,
           style: ElevatedButton.styleFrom(
@@ -56,16 +81,29 @@ class SymbolSelectionWidget extends StatelessWidget {
               borderRadius: BorderRadius.circular(12),
             ),
             elevation: buttonsEnabled ? 2 : 0,
+            // Ensure minimum touch target size for accessibility
+            minimumSize: const Size(44, 44),
           ),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(symbol.iconData, size: 32),
-              const SizedBox(height: 4),
-              Text(
-                symbol.displayName,
-                style: const TextStyle(fontSize: 10),
-                textAlign: TextAlign.center,
+              Icon(
+                symbol.iconData,
+                size: (buttonWidth * 0.4).clamp(24.0, 36.0),
+                semanticLabel: symbol.displayName,
+              ),
+              SizedBox(height: buttonHeight * 0.05),
+              Flexible(
+                child: Text(
+                  symbol.displayName,
+                  style: TextStyle(
+                    fontSize: (buttonWidth * 0.12).clamp(8.0, 12.0),
+                    fontWeight: FontWeight.w500,
+                  ),
+                  textAlign: TextAlign.center,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
             ],
           ),

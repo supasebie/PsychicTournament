@@ -19,7 +19,7 @@ void main() {
       expect(find.text('Select a symbol:'), findsOneWidget);
 
       // Verify remote viewing coordinates are displayed
-      expect(find.textContaining('Remote Viewing Coordinates'), findsOneWidget);
+      expect(find.text('Coordinates'), findsOneWidget);
 
       // Verify all symbol buttons are present and enabled
       for (final symbol in ZenerSymbol.values) {
@@ -90,8 +90,6 @@ void main() {
       // Arrange
       await tester.pumpWidget(const PsychicTournament());
       await tester.pumpAndSettle();
-
-      int initialScore = 0;
 
       // Play several turns and track score changes
       for (int turn = 1; turn <= 5; turn++) {
@@ -224,6 +222,11 @@ void main() {
       expect(newCoordinates, isNotNull);
       expect(newCoordinates!.contains('-'), isTrue);
       expect(newCoordinates.length, equals(9)); // XXXX-XXXX format
+
+      // Verify coordinates format is consistent
+      expect(initialCoordinates, isNotNull);
+      expect(initialCoordinates!.contains('-'), isTrue);
+      expect(initialCoordinates.length, equals(9));
     });
 
     testWidgets('card reveal animation works correctly', (
@@ -263,12 +266,13 @@ void main() {
       await tester.pumpWidget(const PsychicTournament());
       await tester.pumpAndSettle();
 
-      // Assert - Check semantic labels for symbol buttons
+      // Assert - Check semantic labels for symbol buttons (updated to match enhanced labels)
       for (final symbol in ZenerSymbol.values) {
         final semanticsWidgets = find.byWidgetPredicate(
           (widget) =>
               widget is Semantics &&
-              widget.properties.label == symbol.displayName &&
+              widget.properties.label ==
+                  '${symbol.displayName} symbol button' &&
               widget.properties.button == true,
         );
         expect(semanticsWidgets, findsOneWidget);

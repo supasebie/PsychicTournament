@@ -77,8 +77,8 @@ class _CardRevealWidgetState extends State<CardRevealWidget>
       children: [
         // Card display area
         Container(
-          width: 120,
-          height: 160,
+          width: 240,
+          height: 320,
           decoration: BoxDecoration(
             color: Theme.of(context).colorScheme.surface,
             borderRadius: BorderRadius.circular(12.0),
@@ -154,15 +154,6 @@ class _CardRevealWidgetState extends State<CardRevealWidget>
               ).colorScheme.onSurface.withValues(alpha: 0.4),
             ),
             const SizedBox(height: 8.0),
-            Text(
-              '?',
-              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                color: Theme.of(
-                  context,
-                ).colorScheme.onSurface.withValues(alpha: 0.4),
-                fontWeight: FontWeight.bold,
-              ),
-            ),
           ],
         ),
       ),
@@ -184,7 +175,7 @@ class _CardRevealWidgetState extends State<CardRevealWidget>
               children: [
                 Icon(
                   symbol.iconData,
-                  size: 64.0,
+                  size: 192.0,
                   color: Theme.of(context).colorScheme.primary,
                 ),
                 const SizedBox(height: 8.0),
