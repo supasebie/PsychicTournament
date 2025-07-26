@@ -1,10 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'lib/services/haptic_feedback_service.dart';
+import 'package:psychictournament/services/haptic_feedback_service.dart';
 
 void main() {
   group('Enhanced Feedback Integration', () {
     test('HapticFeedbackService methods are callable', () async {
-      // Test that the haptic feedback service methods can be called without errors
+      // Test that the vibration feedback service methods can be called without errors
       expect(() async {
         await HapticFeedbackService.triggerCorrectGuessFeedback();
       }, returnsNormally);
@@ -14,7 +14,7 @@ void main() {
       }, returnsNormally);
     });
 
-    test('HapticFeedbackService has expected API', () {
+    test('HapticFeedbackService has expected API', () async {
       // Verify the service has the expected static methods
       expect(
         HapticFeedbackService.triggerCorrectGuessFeedback,
@@ -24,7 +24,10 @@ void main() {
         HapticFeedbackService.triggerIncorrectGuessFeedback,
         isA<Function>(),
       );
-      expect(HapticFeedbackService.isHapticFeedbackSupported, isA<bool>());
+
+      // Test the vibration support check (now async)
+      final isSupported = await HapticFeedbackService.isVibrationSupported;
+      expect(isSupported, isA<bool>());
     });
   });
 }

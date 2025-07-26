@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'lib/screens/zener_game_screen.dart';
+import 'package:psychictournament/screens/zener_game_screen.dart';
 
 void main() {
   testWidgets('Enhanced feedback integration test', (
@@ -30,11 +30,9 @@ void main() {
         true,
       );
 
-      print(
-        'Enhanced feedback integration test passed - overlay appears on guess',
-      );
+      // Test passed - overlay appears on guess
     } else {
-      print('Circle button not found, but test setup is working');
+      // Circle button not found, but test setup is working
     }
   });
 }

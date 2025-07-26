@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'screens/main_menu_screen.dart';
 import 'screens/zener_game_screen.dart';
 
 void main() {
@@ -7,6 +8,10 @@ void main() {
 
 class PsychicTournament extends StatelessWidget {
   const PsychicTournament({super.key});
+
+  // Named routes for better navigation management
+  static const String mainMenuRoute = '/';
+  static const String zenerGameRoute = '/zener-game';
 
   @override
   Widget build(BuildContext context) {
@@ -19,7 +24,11 @@ class PsychicTournament extends StatelessWidget {
         ),
         useMaterial3: true,
       ),
-      home: const ZenerGameScreen(),
+      initialRoute: mainMenuRoute,
+      routes: {
+        mainMenuRoute: (context) => const MainMenuScreen(),
+        zenerGameRoute: (context) => const ZenerGameScreen(),
+      },
       debugShowCheckedModeBanner: false,
     );
   }
