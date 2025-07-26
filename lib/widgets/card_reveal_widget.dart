@@ -9,9 +9,6 @@ class CardRevealWidget extends StatefulWidget {
   /// Whether to show the symbol (true) or placeholder (false)
   final bool isRevealed;
 
-  /// Optional feedback message to display below the card
-  final String? feedbackMessage;
-
   /// Duration for the reveal animation
   final Duration animationDuration;
 
@@ -19,7 +16,6 @@ class CardRevealWidget extends StatefulWidget {
     super.key,
     this.revealedSymbol,
     this.isRevealed = false,
-    this.feedbackMessage,
     this.animationDuration = const Duration(milliseconds: 300),
   });
 
@@ -31,7 +27,6 @@ class _CardRevealWidgetState extends State<CardRevealWidget>
     with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<double> _scaleAnimation;
-  late Animation<double> _opacityAnimation;
 
   @override
   void initState() {
@@ -45,9 +40,9 @@ class _CardRevealWidgetState extends State<CardRevealWidget>
       CurvedAnimation(parent: _animationController, curve: Curves.elasticOut),
     );
 
-    _opacityAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
-    );
+    // _opacityAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+    //   CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
+    // );
   }
 
   @override
@@ -72,70 +67,36 @@ class _CardRevealWidgetState extends State<CardRevealWidget>
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        // Card display area
-        Container(
-          width: 240,
-          height: 320,
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surface,
-            borderRadius: BorderRadius.circular(12.0),
-            border: Border.all(
-              color: Theme.of(context).colorScheme.outline,
-              width: 2.0,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Theme.of(context).shadowColor.withValues(alpha: 0.1),
-                blurRadius: 4.0,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: AnimatedSwitcher(
-            duration: widget.animationDuration,
-            transitionBuilder: (Widget child, Animation<double> animation) {
-              return ScaleTransition(
-                scale: animation,
-                child: FadeTransition(opacity: animation, child: child),
-              );
-            },
-            child: widget.isRevealed && widget.revealedSymbol != null
-                ? _buildRevealedCard()
-                : _buildPlaceholderCard(),
-          ),
+    return Container(
+      width: 240,
+      height: 320,
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(12.0),
+        border: Border.all(
+          color: Theme.of(context).colorScheme.outline,
+          width: 2.0,
         ),
-
-        // Feedback message area
-        const SizedBox(height: 12.0),
-        AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          height: widget.feedbackMessage != null ? 32.0 : 0.0,
-          child: widget.feedbackMessage != null
-              ? AnimatedBuilder(
-                  animation: _opacityAnimation,
-                  builder: (context, child) {
-                    return Opacity(
-                      opacity: widget.isRevealed
-                          ? _opacityAnimation.value
-                          : 0.0,
-                      child: Text(
-                        widget.feedbackMessage!,
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.w500,
-                          color: _getFeedbackColor(context),
-                        ),
-                        textAlign: TextAlign.center,
-                        semanticsLabel: widget.feedbackMessage,
-                      ),
-                    );
-                  },
-                )
-              : const SizedBox.shrink(),
-        ),
-      ],
+        boxShadow: [
+          BoxShadow(
+            color: Theme.of(context).shadowColor.withValues(alpha: 0.1),
+            blurRadius: 4.0,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: AnimatedSwitcher(
+        duration: widget.animationDuration,
+        transitionBuilder: (Widget child, Animation<double> animation) {
+          return ScaleTransition(
+            scale: animation,
+            child: FadeTransition(opacity: animation, child: child),
+          );
+        },
+        child: widget.isRevealed && widget.revealedSymbol != null
+            ? _buildRevealedCard()
+            : _buildPlaceholderCard(),
+      ),
     );
   }
 
@@ -154,6 +115,15 @@ class _CardRevealWidgetState extends State<CardRevealWidget>
               ).colorScheme.onSurface.withValues(alpha: 0.4),
             ),
             const SizedBox(height: 8.0),
+            Text(
+              '?',
+              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                color: Theme.of(
+                  context,
+                ).colorScheme.onSurface.withValues(alpha: 0.4),
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ],
         ),
       ),
@@ -192,19 +162,5 @@ class _CardRevealWidgetState extends State<CardRevealWidget>
         );
       },
     );
-  }
-
-  Color _getFeedbackColor(BuildContext context) {
-    if (widget.feedbackMessage == null) {
-      return Theme.of(context).colorScheme.onSurface;
-    }
-
-    if (widget.feedbackMessage!.toLowerCase().contains('correct')) {
-      return Colors.green.shade700;
-    } else if (widget.feedbackMessage!.toLowerCase().contains('incorrect')) {
-      return Colors.red.shade700;
-    }
-
-    return Theme.of(context).colorScheme.onSurface;
   }
 }

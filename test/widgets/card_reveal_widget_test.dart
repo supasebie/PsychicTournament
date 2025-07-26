@@ -64,12 +64,9 @@ void main() {
       }
     });
 
-    testWidgets('displays feedback message when provided', (
+    testWidgets('displays symbol name when revealed', (
       WidgetTester tester,
     ) async {
-      // Arrange
-      const feedbackMessage = 'Correct!';
-
       // Act
       await tester.pumpWidget(
         const MaterialApp(
@@ -77,7 +74,6 @@ void main() {
             body: CardRevealWidget(
               revealedSymbol: ZenerSymbol.star,
               isRevealed: true,
-              feedbackMessage: feedbackMessage,
             ),
           ),
         ),
@@ -87,10 +83,10 @@ void main() {
       await tester.pumpAndSettle();
 
       // Assert
-      expect(find.text(feedbackMessage), findsOneWidget);
+      expect(find.text(ZenerSymbol.star.displayName), findsOneWidget);
     });
 
-    testWidgets('does not display feedback when not provided', (
+    testWidgets('displays symbol name when revealed', (
       WidgetTester tester,
     ) async {
       // Act
@@ -109,8 +105,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Assert
-      expect(find.text('Correct!'), findsNothing);
-      expect(find.text('Incorrect'), findsNothing);
+      expect(find.text(ZenerSymbol.cross.displayName), findsOneWidget);
     });
 
     testWidgets('transitions from placeholder to revealed state', (
@@ -166,25 +161,26 @@ void main() {
 
       // Assert
       final container = tester.widget<Container>(find.byType(Container).first);
-      expect(container.constraints?.maxWidth, 120);
-      expect(container.constraints?.maxHeight, 160);
-
       final decoration = container.decoration as BoxDecoration;
       expect(decoration.borderRadius, BorderRadius.circular(12.0));
       expect(decoration.border, isA<Border>());
+
+      // Check that the widget has the expected size by checking the render box
+      final renderBox = tester.renderObject(find.byType(CardRevealWidget));
+      expect(renderBox.paintBounds.width, 240);
+      expect(renderBox.paintBounds.height, 320);
     });
 
-    testWidgets('displays correct feedback message colors', (
+    testWidgets('displays symbol with correct styling', (
       WidgetTester tester,
     ) async {
-      // Test correct feedback
+      // Act
       await tester.pumpWidget(
         const MaterialApp(
           home: Scaffold(
             body: CardRevealWidget(
               revealedSymbol: ZenerSymbol.square,
               isRevealed: true,
-              feedbackMessage: 'Correct!',
             ),
           ),
         ),
@@ -193,27 +189,11 @@ void main() {
       // Wait for all animations to complete
       await tester.pumpAndSettle();
 
-      // Find the feedback text widget - it should be visible after animations
-      expect(find.text('Correct!'), findsOneWidget);
+      // Assert symbol name is displayed
+      expect(find.text(ZenerSymbol.square.displayName), findsOneWidget);
 
-      // Test incorrect feedback
-      await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(
-            body: CardRevealWidget(
-              revealedSymbol: ZenerSymbol.square,
-              isRevealed: true,
-              feedbackMessage: 'Incorrect. The card was a Square',
-            ),
-          ),
-        ),
-      );
-
-      // Wait for all animations to complete
-      await tester.pumpAndSettle();
-
-      // Find the feedback text widget - it should be visible after animations
-      expect(find.text('Incorrect. The card was a Square'), findsOneWidget);
+      // Assert symbol icon is displayed
+      expect(find.byIcon(ZenerSymbol.square.iconData), findsOneWidget);
     });
 
     testWidgets('handles animation duration parameter', (
@@ -238,9 +218,6 @@ void main() {
     testWidgets('maintains accessibility semantics', (
       WidgetTester tester,
     ) async {
-      // Arrange
-      const feedbackMessage = 'Correct! Well done.';
-
       // Act
       await tester.pumpWidget(
         const MaterialApp(
@@ -248,7 +225,6 @@ void main() {
             body: CardRevealWidget(
               revealedSymbol: ZenerSymbol.star,
               isRevealed: true,
-              feedbackMessage: feedbackMessage,
             ),
           ),
         ),
@@ -256,9 +232,11 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      // Assert
-      final feedbackText = tester.widget<Text>(find.text(feedbackMessage));
-      expect(feedbackText.semanticsLabel, feedbackMessage);
+      // Assert that symbol name text is accessible
+      expect(find.text(ZenerSymbol.star.displayName), findsOneWidget);
+
+      // Assert that icon is accessible
+      expect(find.byIcon(ZenerSymbol.star.iconData), findsOneWidget);
     });
 
     testWidgets('handles null revealed symbol gracefully', (

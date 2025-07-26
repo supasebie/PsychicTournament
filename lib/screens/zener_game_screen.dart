@@ -7,6 +7,8 @@ import '../widgets/symbol_selection_widget.dart';
 import '../widgets/score_display_widget.dart';
 import '../widgets/card_reveal_widget.dart';
 import '../widgets/final_score_dialog.dart';
+import '../widgets/feedback_overlay_widget.dart';
+import '../services/haptic_feedback_service.dart';
 
 /// Main game screen that manages the complete Zener card game experience
 class ZenerGameScreen extends StatefulWidget {
@@ -24,14 +26,19 @@ class _ZenerGameScreenState extends State<ZenerGameScreen> {
   int _currentTurn = 1;
   bool _buttonsEnabled = true;
   ZenerSymbol? _revealedSymbol;
-  String? _feedbackMessage;
   bool _isCardRevealed = false;
   bool _debugMode = false;
+
+  // Enhanced feedback overlay state variables
+  bool _showFeedbackOverlay = false;
+  String _overlayFeedbackText = '';
+  bool _isCorrectGuess = false;
 
   // Timers for managing turn transitions and feedback
   Timer? _turnTransitionTimer;
   Timer? _feedbackTimer;
   Timer? _scoreUpdateTimer;
+  Timer? _overlayTimer;
 
   @override
   void initState() {
@@ -41,9 +48,18 @@ class _ZenerGameScreenState extends State<ZenerGameScreen> {
 
   @override
   void dispose() {
+    // Cancel all timers to prevent memory leaks and callbacks on disposed widgets
     _turnTransitionTimer?.cancel();
     _feedbackTimer?.cancel();
     _scoreUpdateTimer?.cancel();
+    _overlayTimer?.cancel();
+
+    // Clear timer references
+    _turnTransitionTimer = null;
+    _feedbackTimer = null;
+    _scoreUpdateTimer = null;
+    _overlayTimer = null;
+
     super.dispose();
   }
 
@@ -56,8 +72,11 @@ class _ZenerGameScreenState extends State<ZenerGameScreen> {
         _currentTurn = _gameController.getCurrentTurn();
         _buttonsEnabled = true;
         _revealedSymbol = null;
-        _feedbackMessage = null;
         _isCardRevealed = false;
+        // Reset enhanced feedback overlay state
+        _showFeedbackOverlay = false;
+        _overlayFeedbackText = '';
+        _isCorrectGuess = false;
         // Note: _debugMode is intentionally not reset to preserve user preference
       });
     } catch (e) {
@@ -69,7 +88,6 @@ class _ZenerGameScreenState extends State<ZenerGameScreen> {
         _currentTurn = 1;
         _buttonsEnabled = false;
         _revealedSymbol = null;
-        _feedbackMessage = 'Error initializing game. Please restart.';
         _isCardRevealed = false;
       });
     }
@@ -81,9 +99,14 @@ class _ZenerGameScreenState extends State<ZenerGameScreen> {
       return;
     }
 
+    // Cancel any existing overlay timer to handle rapid interactions
+    _overlayTimer?.cancel();
+
     // Disable buttons immediately during guess processing
     setState(() {
       _buttonsEnabled = false;
+      // Hide any existing overlay to prevent conflicts
+      _showFeedbackOverlay = false;
     });
 
     try {
@@ -94,8 +117,10 @@ class _ZenerGameScreenState extends State<ZenerGameScreen> {
       setState(() {
         _revealedSymbol = result.correctSymbol;
         _isCardRevealed = true;
-        _feedbackMessage = _generateFeedbackMessage(result);
       });
+
+      // Show enhanced feedback overlay
+      _showEnhancedFeedback(result);
 
       // Update score immediately if correct (as per requirement 4.2)
       if (result.isCorrect) {
@@ -104,25 +129,53 @@ class _ZenerGameScreenState extends State<ZenerGameScreen> {
         });
       } else {
         // For incorrect guesses, delay score update slightly for better UX
-        _scoreUpdateTimer?.cancel();
-        _scoreUpdateTimer = Timer(const Duration(milliseconds: 300), () {
+        try {
+          _scoreUpdateTimer?.cancel();
+          _scoreUpdateTimer = Timer(const Duration(milliseconds: 300), () {
+            if (mounted) {
+              try {
+                setState(() {
+                  _currentScore = result.newScore;
+                });
+              } catch (e) {
+                debugPrint('Error updating score: $e');
+              }
+            }
+          });
+        } catch (e) {
+          debugPrint('Error setting score update timer: $e');
+          // Fallback: update score immediately
           if (mounted) {
             setState(() {
               _currentScore = result.newScore;
             });
           }
-        });
+        }
       }
 
       // Update turn counter after a brief delay for smooth transition
-      _scoreUpdateTimer?.cancel();
-      _scoreUpdateTimer = Timer(const Duration(milliseconds: 100), () {
+      try {
+        _scoreUpdateTimer?.cancel();
+        _scoreUpdateTimer = Timer(const Duration(milliseconds: 100), () {
+          if (mounted) {
+            try {
+              setState(() {
+                _currentTurn = _gameController.getCurrentTurn();
+              });
+            } catch (e) {
+              debugPrint('Error updating turn: $e');
+            }
+          }
+        });
+      } catch (e) {
+        debugPrint('Error setting turn update timer: $e');
+        // Fallback: update turn immediately
         if (mounted) {
           setState(() {
             _currentTurn = _gameController.getCurrentTurn();
           });
         }
-      });
+      }
 
       // Check if game is complete
       if (_gameController.isGameComplete()) {
@@ -136,79 +189,160 @@ class _ZenerGameScreenState extends State<ZenerGameScreen> {
       debugPrint('Error processing guess: $e');
       setState(() {
         _buttonsEnabled = true;
-        _feedbackMessage = 'Error processing guess. Please try again.';
         _isCardRevealed = false;
         _revealedSymbol = null;
-      });
-
-      // Clear error message after a delay
-      Timer(const Duration(seconds: 2), () {
-        if (mounted) {
-          setState(() {
-            _feedbackMessage = null;
-          });
-        }
       });
     }
   }
 
-  /// Generates appropriate feedback message based on guess result
-  String _generateFeedbackMessage(GuessResult result) {
-    if (result.isCorrect) {
-      return 'Correct!';
-    } else {
-      return 'Incorrect. The card was a ${result.correctSymbol.displayName}';
+  /// Shows enhanced feedback overlay with haptic feedback and automatic dismissal
+  void _showEnhancedFeedback(GuessResult result) {
+    try {
+      // Update overlay state variables
+      setState(() {
+        _showFeedbackOverlay = true;
+        _overlayFeedbackText = result.isCorrect ? 'Hit!' : 'Miss';
+        _isCorrectGuess = result.isCorrect;
+      });
+
+      // Trigger haptic feedback based on guess result with error handling
+      _triggerHapticFeedbackSafely(result.isCorrect);
+
+      // Cancel any existing overlay timer
+      _overlayTimer?.cancel();
+
+      // Set timer for automatic overlay dismissal (1.5 seconds as per requirements 1.4, 2.4)
+      _overlayTimer = Timer(const Duration(milliseconds: 1500), () {
+        if (mounted) {
+          try {
+            setState(() {
+              _showFeedbackOverlay = false;
+            });
+          } catch (e) {
+            debugPrint('Error hiding feedback overlay: $e');
+          }
+        }
+      });
+    } catch (e) {
+      debugPrint('Error showing enhanced feedback: $e');
+      // Fallback: ensure overlay is hidden if there was an error
+      if (mounted) {
+        setState(() {
+          _showFeedbackOverlay = false;
+        });
+      }
+    }
+  }
+
+  /// Safely triggers haptic feedback with comprehensive error handling
+  void _triggerHapticFeedbackSafely(bool isCorrect) {
+    try {
+      if (isCorrect) {
+        HapticFeedbackService.triggerCorrectGuessFeedback();
+      } else {
+        HapticFeedbackService.triggerIncorrectGuessFeedback();
+      }
+    } catch (e) {
+      // Haptic feedback is non-critical, so we just log and continue
+      debugPrint('Haptic feedback error: $e');
     }
   }
 
   /// Starts the turn transition timer with improved timing sequence
   void _startTurnTransition() {
-    _turnTransitionTimer?.cancel();
+    try {
+      _turnTransitionTimer?.cancel();
 
-    // Phase 1: Show feedback for 1.5 seconds (requirement 3.3)
-    _feedbackTimer?.cancel();
-    _feedbackTimer = Timer(const Duration(milliseconds: 1500), () {
+      // Phase 1: Show feedback for 1.5 seconds (requirement 3.3)
+      _feedbackTimer?.cancel();
+      _feedbackTimer = Timer(const Duration(milliseconds: 1500), () {
+        if (mounted) {
+          try {
+            _beginTurnReset();
+          } catch (e) {
+            debugPrint('Error in turn reset: $e');
+          }
+        }
+      });
+    } catch (e) {
+      debugPrint('Error starting turn transition: $e');
+      // Fallback: immediately begin turn reset
       if (mounted) {
         _beginTurnReset();
       }
-    });
+    }
   }
 
   /// Begins the turn reset sequence with smooth transitions
   void _beginTurnReset() {
-    // Phase 2: Start hiding feedback and card (smooth transition)
-    setState(() {
-      _feedbackMessage = null;
-    });
+    try {
+      // Phase 2: Start hiding card (smooth transition)
 
-    // Phase 3: Hide card after brief delay for smooth animation
-    Timer(const Duration(milliseconds: 200), () {
+      // Phase 3: Hide card after brief delay for smooth animation
+      Timer(const Duration(milliseconds: 200), () {
+        if (mounted) {
+          try {
+            setState(() {
+              _isCardRevealed = false;
+              _revealedSymbol = null;
+            });
+          } catch (e) {
+            debugPrint('Error hiding card: $e');
+          }
+        }
+      });
+
+      // Phase 4: Re-enable buttons after card is hidden (requirement 6.4)
+      Timer(const Duration(milliseconds: 500), () {
+        if (mounted) {
+          try {
+            setState(() {
+              _buttonsEnabled = true;
+            });
+          } catch (e) {
+            debugPrint('Error re-enabling buttons: $e');
+            // Fallback: ensure buttons are enabled
+            if (mounted) {
+              setState(() {
+                _buttonsEnabled = true;
+              });
+            }
+          }
+        }
+      });
+    } catch (e) {
+      debugPrint('Error in turn reset sequence: $e');
+      // Fallback: immediately reset to playable state
       if (mounted) {
         setState(() {
           _isCardRevealed = false;
           _revealedSymbol = null;
-        });
-      }
-    });
-
-    // Phase 4: Re-enable buttons after card is hidden (requirement 6.4)
-    Timer(const Duration(milliseconds: 500), () {
-      if (mounted) {
-        setState(() {
           _buttonsEnabled = true;
         });
       }
-    });
+    }
   }
 
   /// Handles game completion and shows final score
   void _handleGameCompletion() {
-    // Show final score dialog after a brief delay
-    Timer(const Duration(milliseconds: 2500), () {
+    try {
+      // Show final score dialog after a brief delay
+      Timer(const Duration(milliseconds: 2500), () {
+        if (mounted) {
+          try {
+            _showFinalScoreDialog();
+          } catch (e) {
+            debugPrint('Error showing final score dialog: $e');
+          }
+        }
+      });
+    } catch (e) {
+      debugPrint('Error handling game completion: $e');
+      // Fallback: show dialog immediately
       if (mounted) {
         _showFinalScoreDialog();
       }
-    });
+    }
   }
 
   /// Shows the final score dialog with play again option
@@ -235,12 +369,27 @@ class _ZenerGameScreenState extends State<ZenerGameScreen> {
 
   /// Starts a new game
   void _playAgain() {
-    Navigator.of(context).pop(); // Close dialog
+    try {
+      Navigator.of(context).pop(); // Close dialog
+    } catch (e) {
+      debugPrint('Error closing dialog: $e');
+    }
 
-    // Cancel all timers to ensure clean state
-    _turnTransitionTimer?.cancel();
-    _feedbackTimer?.cancel();
-    _scoreUpdateTimer?.cancel();
+    try {
+      // Cancel all timers to ensure clean state
+      _turnTransitionTimer?.cancel();
+      _feedbackTimer?.cancel();
+      _scoreUpdateTimer?.cancel();
+      _overlayTimer?.cancel();
+
+      // Clear timer references for safety
+      _turnTransitionTimer = null;
+      _feedbackTimer = null;
+      _scoreUpdateTimer = null;
+      _overlayTimer = null;
+    } catch (e) {
+      debugPrint('Error cancelling timers: $e');
+    }
 
     _initializeGame();
   }
@@ -410,244 +559,265 @@ class _ZenerGameScreenState extends State<ZenerGameScreen> {
         ],
       ),
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: SingleChildScrollView(
-            physics: const BouncingScrollPhysics(),
-            child: Column(
-              children: [
-                // Game info section with animations
-                AnimatedContainer(
-                  duration: const Duration(milliseconds: 300),
-                  curve: Curves.easeInOut,
-                  child: LayoutBuilder(
-                    builder: (context, constraints) {
-                      // Use column layout on very narrow screens
-                      if (constraints.maxWidth < 300) {
-                        return Column(
-                          children: [
-                            AnimatedSwitcher(
-                              duration: const Duration(milliseconds: 400),
-                              transitionBuilder: (child, animation) {
-                                return SlideTransition(
-                                  position: Tween<Offset>(
-                                    begin: const Offset(-0.5, 0),
-                                    end: Offset.zero,
-                                  ).animate(animation),
-                                  child: FadeTransition(
-                                    opacity: animation,
-                                    child: child,
+        child: Stack(
+          children: [
+            // Main game content
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: SingleChildScrollView(
+                physics: const BouncingScrollPhysics(),
+                child: Column(
+                  children: [
+                    // Game info section with animations
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeInOut,
+                      child: LayoutBuilder(
+                        builder: (context, constraints) {
+                          // Use column layout on very narrow screens
+                          if (constraints.maxWidth < 300) {
+                            return Column(
+                              children: [
+                                AnimatedSwitcher(
+                                  duration: const Duration(milliseconds: 400),
+                                  transitionBuilder: (child, animation) {
+                                    return SlideTransition(
+                                      position: Tween<Offset>(
+                                        begin: const Offset(-0.5, 0),
+                                        end: Offset.zero,
+                                      ).animate(animation),
+                                      child: FadeTransition(
+                                        opacity: animation,
+                                        child: child,
+                                      ),
+                                    );
+                                  },
+                                  child: ScoreDisplayWidget(
+                                    key: ValueKey(_currentScore),
+                                    score: _currentScore,
                                   ),
-                                );
-                              },
-                              child: ScoreDisplayWidget(
-                                key: ValueKey(_currentScore),
-                                score: _currentScore,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            AnimatedContainer(
-                              duration: const Duration(milliseconds: 300),
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 6,
-                              ),
-                              decoration: BoxDecoration(
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.secondaryContainer,
-                                borderRadius: BorderRadius.circular(6),
-                                boxShadow: [
-                                  BoxShadow(
+                                ),
+                                const SizedBox(height: 8),
+                                AnimatedContainer(
+                                  duration: const Duration(milliseconds: 300),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 6,
+                                  ),
+                                  decoration: BoxDecoration(
                                     color: Theme.of(
                                       context,
-                                    ).shadowColor.withValues(alpha: 0.1),
-                                    blurRadius: 4,
-                                    offset: const Offset(0, 2),
-                                  ),
-                                ],
-                              ),
-                              child: AnimatedSwitcher(
-                                duration: const Duration(milliseconds: 300),
-                                child: Text(
-                                  'Turn $_currentTurn / 25',
-                                  key: ValueKey(_currentTurn),
-                                  style: Theme.of(context).textTheme.bodyMedium
-                                      ?.copyWith(
-                                        fontWeight: FontWeight.w600,
+                                    ).colorScheme.secondaryContainer,
+                                    borderRadius: BorderRadius.circular(6),
+                                    boxShadow: [
+                                      BoxShadow(
                                         color: Theme.of(
                                           context,
-                                        ).colorScheme.onSecondaryContainer,
+                                        ).shadowColor.withValues(alpha: 0.1),
+                                        blurRadius: 4,
+                                        offset: const Offset(0, 2),
                                       ),
+                                    ],
+                                  ),
+                                  child: AnimatedSwitcher(
+                                    duration: const Duration(milliseconds: 300),
+                                    child: Text(
+                                      'Turn $_currentTurn / 25',
+                                      key: ValueKey(_currentTurn),
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .bodyMedium
+                                          ?.copyWith(
+                                            fontWeight: FontWeight.w600,
+                                            color: Theme.of(
+                                              context,
+                                            ).colorScheme.onSecondaryContainer,
+                                          ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            );
+                          }
+
+                          // Use row layout for wider screens with flexible widgets
+                          return Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Flexible(
+                                child: AnimatedSwitcher(
+                                  duration: const Duration(milliseconds: 400),
+                                  transitionBuilder: (child, animation) {
+                                    return SlideTransition(
+                                      position: Tween<Offset>(
+                                        begin: const Offset(-0.5, 0),
+                                        end: Offset.zero,
+                                      ).animate(animation),
+                                      child: FadeTransition(
+                                        opacity: animation,
+                                        child: child,
+                                      ),
+                                    );
+                                  },
+                                  child: ScoreDisplayWidget(
+                                    key: ValueKey(_currentScore),
+                                    score: _currentScore,
+                                  ),
                                 ),
                               ),
-                            ),
-                          ],
-                        );
-                      }
-
-                      // Use row layout for wider screens with flexible widgets
-                      return Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Flexible(
-                            child: AnimatedSwitcher(
-                              duration: const Duration(milliseconds: 400),
-                              transitionBuilder: (child, animation) {
-                                return SlideTransition(
-                                  position: Tween<Offset>(
-                                    begin: const Offset(-0.5, 0),
-                                    end: Offset.zero,
-                                  ).animate(animation),
-                                  child: FadeTransition(
-                                    opacity: animation,
-                                    child: child,
+                              // Remote viewing coordinates with subtle animation
+                              AnimatedContainer(
+                                duration: const Duration(milliseconds: 300),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 8,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.surfaceContainerHighest,
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(
+                                    color: Theme.of(context).colorScheme.outline
+                                        .withValues(alpha: 0.3),
                                   ),
-                                );
-                              },
-                              child: ScoreDisplayWidget(
-                                key: ValueKey(_currentScore),
-                                score: _currentScore,
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Theme.of(
+                                        context,
+                                      ).shadowColor.withValues(alpha: 0.05),
+                                      blurRadius: 2,
+                                      offset: const Offset(0, 1),
+                                    ),
+                                  ],
+                                ),
+                                child: Column(
+                                  children: [
+                                    Text(
+                                      'Coordinates',
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .bodySmall
+                                          ?.copyWith(
+                                            color: Theme.of(context)
+                                                .colorScheme
+                                                .onSurface
+                                                .withValues(alpha: 0.7),
+                                          ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    AnimatedDefaultTextStyle(
+                                      duration: const Duration(
+                                        milliseconds: 300,
+                                      ),
+                                      style:
+                                          Theme.of(
+                                            context,
+                                          ).textTheme.titleMedium?.copyWith(
+                                            fontWeight: FontWeight.bold,
+                                            fontFamily: 'monospace',
+                                          ) ??
+                                          const TextStyle(),
+                                      child: Text(
+                                        _gameController
+                                            .getRemoteViewingCoordinates(),
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Flexible(
-                            child: AnimatedContainer(
-                              duration: const Duration(milliseconds: 300),
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 6,
-                              ),
-                              decoration: BoxDecoration(
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.secondaryContainer,
-                                borderRadius: BorderRadius.circular(6),
-                                boxShadow: [
-                                  BoxShadow(
+                              Flexible(
+                                child: AnimatedContainer(
+                                  duration: const Duration(milliseconds: 300),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 6,
+                                  ),
+                                  decoration: BoxDecoration(
                                     color: Theme.of(
                                       context,
-                                    ).shadowColor.withValues(alpha: 0.1),
-                                    blurRadius: 4,
-                                    offset: const Offset(0, 2),
-                                  ),
-                                ],
-                              ),
-                              child: AnimatedSwitcher(
-                                duration: const Duration(milliseconds: 300),
-                                child: Text(
-                                  'Turn $_currentTurn / 25',
-                                  key: ValueKey(_currentTurn),
-                                  style: Theme.of(context).textTheme.bodyMedium
-                                      ?.copyWith(
-                                        fontWeight: FontWeight.w600,
+                                    ).colorScheme.secondaryContainer,
+                                    borderRadius: BorderRadius.circular(6),
+                                    boxShadow: [
+                                      BoxShadow(
                                         color: Theme.of(
                                           context,
-                                        ).colorScheme.onSecondaryContainer,
+                                        ).shadowColor.withValues(alpha: 0.1),
+                                        blurRadius: 4,
+                                        offset: const Offset(0, 2),
                                       ),
+                                    ],
+                                  ),
+                                  child: AnimatedSwitcher(
+                                    duration: const Duration(milliseconds: 300),
+                                    child: Text(
+                                      'Turn $_currentTurn / 25',
+                                      key: ValueKey(_currentTurn),
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .bodyMedium
+                                          ?.copyWith(
+                                            fontWeight: FontWeight.w600,
+                                            color: Theme.of(
+                                              context,
+                                            ).colorScheme.onSecondaryContainer,
+                                          ),
+                                    ),
+                                  ),
                                 ),
                               ),
-                            ),
-                          ),
-                        ],
-                      );
-                    },
-                  ),
-                ),
-
-                const SizedBox(height: 24),
-
-                // Debug panel with slide animation
-                AnimatedSize(
-                  duration: const Duration(milliseconds: 300),
-                  curve: Curves.easeInOut,
-                  child: _buildDebugPanel(),
-                ),
-
-                // Remote viewing coordinates with subtle animation
-                AnimatedContainer(
-                  duration: const Duration(milliseconds: 300),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.surfaceContainerHighest,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.outline.withValues(alpha: 0.3),
+                            ],
+                          );
+                        },
+                      ),
                     ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Theme.of(
-                          context,
-                        ).shadowColor.withValues(alpha: 0.05),
-                        blurRadius: 2,
-                        offset: const Offset(0, 1),
+
+                    const SizedBox(height: 24),
+
+                    // Debug panel with slide animation
+                    AnimatedSize(
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeInOut,
+                      child: _buildDebugPanel(),
+                    ),
+
+                    const SizedBox(height: 64),
+
+                    // Card reveal area with enhanced animations
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeInOut,
+                      child: CardRevealWidget(
+                        revealedSymbol: _revealedSymbol,
+                        isRevealed: _isCardRevealed,
                       ),
-                    ],
-                  ),
-                  child: Column(
-                    children: [
-                      Text(
-                        'Coordinates',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.onSurface.withValues(alpha: 0.7),
-                        ),
+                    ),
+
+                    const SizedBox(height: 64),
+
+                    // Symbol selection area with staggered animations
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 400),
+                      curve: Curves.easeOutBack,
+                      child: SymbolSelectionWidget(
+                        onSymbolSelected: _onSymbolSelected,
+                        buttonsEnabled: _buttonsEnabled,
                       ),
-                      const SizedBox(height: 4),
-                      AnimatedDefaultTextStyle(
-                        duration: const Duration(milliseconds: 300),
-                        style:
-                            Theme.of(context).textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              fontFamily: 'monospace',
-                            ) ??
-                            const TextStyle(),
-                        child: Text(
-                          _gameController.getRemoteViewingCoordinates(),
-                        ),
-                      ),
-                    ],
-                  ),
+                    ),
+
+                    const SizedBox(height: 16),
+                  ],
                 ),
-
-                const SizedBox(height: 64),
-
-                // Card reveal area with enhanced animations
-                AnimatedContainer(
-                  duration: const Duration(milliseconds: 300),
-                  curve: Curves.easeInOut,
-                  child: CardRevealWidget(
-                    revealedSymbol: _revealedSymbol,
-                    isRevealed: _isCardRevealed,
-                    feedbackMessage: _feedbackMessage,
-                  ),
-                ),
-
-                const SizedBox(height: 64),
-
-                // Symbol selection area with staggered animations
-                AnimatedContainer(
-                  duration: const Duration(milliseconds: 400),
-                  curve: Curves.easeOutBack,
-                  child: SymbolSelectionWidget(
-                    onSymbolSelected: _onSymbolSelected,
-                    buttonsEnabled: _buttonsEnabled,
-                  ),
-                ),
-
-                const SizedBox(height: 16),
-              ],
+              ),
             ),
-          ),
+
+            // Enhanced feedback overlay with high z-index positioning
+            FeedbackOverlay(
+              isVisible: _showFeedbackOverlay,
+              message: _overlayFeedbackText,
+              isCorrect: _isCorrectGuess,
+            ),
+          ],
         ),
       ),
     );
