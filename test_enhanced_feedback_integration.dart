@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'lib/screens/zener_game_screen.dart';
-import 'lib/models/zener_symbol.dart';
 
 void main() {
   testWidgets('Enhanced feedback integration test', (

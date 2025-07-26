@@ -622,7 +622,7 @@ class _ZenerGameScreenState extends State<ZenerGameScreen> {
                                   child: AnimatedSwitcher(
                                     duration: const Duration(milliseconds: 300),
                                     child: Text(
-                                      'Turn $_currentTurn / 25',
+                                      'Turn ${_currentTurn > 25 ? 25 : _currentTurn} / 25',
                                       key: ValueKey(_currentTurn),
                                       style: Theme.of(context)
                                           .textTheme
@@ -751,7 +751,7 @@ class _ZenerGameScreenState extends State<ZenerGameScreen> {
                                   child: AnimatedSwitcher(
                                     duration: const Duration(milliseconds: 300),
                                     child: Text(
-                                      'Turn $_currentTurn / 25',
+                                      'Turn ${_currentTurn > 25 ? 25 : _currentTurn} / 25',
                                       key: ValueKey(_currentTurn),
                                       style: Theme.of(context)
                                           .textTheme

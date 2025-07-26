@@ -109,21 +109,12 @@ class _CardRevealWidgetState extends State<CardRevealWidget>
           children: [
             Icon(
               Icons.help_outline,
-              size: 48.0,
+              size: 98.0,
               color: Theme.of(
                 context,
               ).colorScheme.onSurface.withValues(alpha: 0.4),
             ),
             const SizedBox(height: 8.0),
-            Text(
-              '?',
-              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                color: Theme.of(
-                  context,
-                ).colorScheme.onSurface.withValues(alpha: 0.4),
-                fontWeight: FontWeight.bold,
-              ),
-            ),
           ],
         ),
       ),
@@ -145,7 +136,7 @@ class _CardRevealWidgetState extends State<CardRevealWidget>
               children: [
                 Icon(
                   symbol.iconData,
-                  size: 192.0,
+                  size: 162.0,
                   color: Theme.of(context).colorScheme.primary,
                 ),
                 const SizedBox(height: 8.0),
