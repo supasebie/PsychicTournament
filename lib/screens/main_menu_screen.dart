@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'zener_game_screen.dart';
 import 'auth_screen.dart';
+import 'game_statistics_screen.dart';
 import '../services/supabase_service.dart';
 
 class MainMenuScreen extends StatefulWidget {
@@ -62,6 +63,23 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
       _showErrorDialog(
         context,
         'Failed to start Zener Cards game. Please try again.',
+      );
+    }
+  }
+
+  /// Navigate to Game Statistics Screen with error handling
+  void _navigateToGameStatistics(BuildContext context) {
+    try {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const GameStatisticsScreen()),
+      );
+    } catch (e) {
+      // Log error and show user-friendly message
+      debugPrint('Navigation to Game Statistics failed: $e');
+      _showErrorDialog(
+        context,
+        'Failed to open game statistics. Please try again.',
       );
     }
   }
@@ -254,6 +272,16 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
         ),
         SizedBox(height: spacing),
 
+        // Game Statistics Button
+        _buildSecondaryButton(
+          context: context,
+          icon: Icons.bar_chart,
+          title: 'Statistics',
+          subtitle: 'View your game stats',
+          onPressed: () => _navigateToGameStatistics(context),
+        ),
+        SizedBox(height: spacing),
+
         // Authentication Button (Secondary)
         if (isSignedIn)
           _buildSecondaryButton(
@@ -290,6 +318,18 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
             title: 'Zener Cards',
             subtitle: 'Test ESP with classic cards',
             onPressed: () => _navigateToZenerGame(context),
+          ),
+        ),
+        SizedBox(width: spacing),
+
+        // Game Statistics Button
+        Expanded(
+          child: _buildSecondaryButton(
+            context: context,
+            icon: Icons.bar_chart,
+            title: 'Statistics',
+            subtitle: 'View your game stats',
+            onPressed: () => _navigateToGameStatistics(context),
           ),
         ),
         SizedBox(width: spacing),

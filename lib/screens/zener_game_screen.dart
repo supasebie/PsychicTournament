@@ -423,6 +423,7 @@ class _ZenerGameScreenState extends State<ZenerGameScreen> {
           builder: (context) => ResultsReviewScreen(
             gameResults: gameResults,
             finalScore: _currentScore,
+            coordinates: _gameController.getRemoteViewingCoordinates(),
             // No callbacks needed since ResultsReviewScreen handles navigation directly
           ),
         ),
@@ -446,6 +447,7 @@ class _ZenerGameScreenState extends State<ZenerGameScreen> {
           builder: (context) => ResultsReviewScreen(
             gameResults: gameResults,
             finalScore: _currentScore,
+            coordinates: _gameController.getRemoteViewingCoordinates(),
             // No callbacks needed since ResultsReviewScreen handles navigation directly
           ),
         ),
