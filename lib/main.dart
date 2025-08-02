@@ -1,8 +1,19 @@
 import 'package:flutter/material.dart';
 import 'screens/main_menu_screen.dart';
 import 'screens/zener_game_screen.dart';
+import 'services/supabase_service.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize Supabase with error handling
+  try {
+    await SupabaseService.initialize();
+  } catch (e) {
+    // Log error but continue app startup
+    debugPrint('Failed to initialize Supabase: $e');
+  }
+
   runApp(const PsychicTournament());
 }
 

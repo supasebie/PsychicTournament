@@ -17,12 +17,16 @@ class GameState {
   /// Whether the game is complete (all 25 turns finished)
   final bool isComplete;
 
+  /// Game results storing each turn as [userGuess, correctAnswer]
+  final List<List<ZenerSymbol>> gameResults;
+
   const GameState({
     required this.deck,
     required this.remoteViewingCoordinates,
     this.currentTurn = 1,
     this.score = 0,
     this.isComplete = false,
+    this.gameResults = const [],
   });
 
   /// Creates a copy of this GameState with optionally updated properties
@@ -32,6 +36,7 @@ class GameState {
     int? currentTurn,
     int? score,
     bool? isComplete,
+    List<List<ZenerSymbol>>? gameResults,
   }) {
     return GameState(
       deck: deck ?? this.deck,
@@ -40,6 +45,7 @@ class GameState {
       currentTurn: currentTurn ?? this.currentTurn,
       score: score ?? this.score,
       isComplete: isComplete ?? this.isComplete,
+      gameResults: gameResults ?? this.gameResults,
     );
   }
 
@@ -64,7 +70,8 @@ class GameState {
         remoteViewingCoordinates == other.remoteViewingCoordinates &&
         currentTurn == other.currentTurn &&
         score == other.score &&
-        isComplete == other.isComplete;
+        isComplete == other.isComplete &&
+        _listOfListsEquals(gameResults, other.gameResults);
   }
 
   @override
@@ -75,13 +82,14 @@ class GameState {
       currentTurn,
       score,
       isComplete,
+      Object.hashAll(gameResults.expand((list) => list)),
     );
   }
 
   @override
   String toString() {
     return 'GameState(deck: ${deck.length} cards, coordinates: $remoteViewingCoordinates, '
-        'turn: $currentTurn, score: $score, complete: $isComplete)';
+        'turn: $currentTurn, score: $score, complete: $isComplete, results: ${gameResults.length})';
   }
 
   /// Helper method to compare two lists for equality
@@ -89,6 +97,15 @@ class GameState {
     if (a.length != b.length) return false;
     for (int i = 0; i < a.length; i++) {
       if (a[i] != b[i]) return false;
+    }
+    return true;
+  }
+
+  /// Helper method to compare two lists of lists for equality
+  bool _listOfListsEquals<T>(List<List<T>> a, List<List<T>> b) {
+    if (a.length != b.length) return false;
+    for (int i = 0; i < a.length; i++) {
+      if (!_listEquals(a[i], b[i])) return false;
     }
     return true;
   }

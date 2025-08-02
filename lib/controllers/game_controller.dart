@@ -75,6 +75,12 @@ class GameController {
     final bool isCorrect = userGuess == correctSymbol;
     final int newScore = isCorrect ? _gameState.score + 1 : _gameState.score;
 
+    // Store the guess result in the format [userGuess, correctAnswer]
+    final List<List<ZenerSymbol>> updatedResults = List.from(
+      _gameState.gameResults,
+    );
+    updatedResults.add([userGuess, correctSymbol]);
+
     // Create the guess result
     final GuessResult result = GuessResult(
       isCorrect: isCorrect,
@@ -91,6 +97,7 @@ class GameController {
       currentTurn: nextTurn,
       score: newScore,
       isComplete: isGameComplete,
+      gameResults: updatedResults,
     );
 
     return result;
@@ -119,6 +126,7 @@ class GameController {
       currentTurn: 1,
       score: 0,
       isComplete: false,
+      gameResults: const [],
     );
   }
 
@@ -140,5 +148,10 @@ class GameController {
   /// Returns whether there are more turns to play
   bool hasMoreTurns() {
     return _gameState.hasMoreTurns;
+  }
+
+  /// Returns the complete list of game results in format [[userGuess, correctAnswer], ...]
+  List<List<ZenerSymbol>> getGameResults() {
+    return List.from(_gameState.gameResults);
   }
 }

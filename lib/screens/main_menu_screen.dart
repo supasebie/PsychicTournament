@@ -1,8 +1,53 @@
 import 'package:flutter/material.dart';
 import 'zener_game_screen.dart';
+import 'auth_screen.dart';
+import '../services/supabase_service.dart';
 
-class MainMenuScreen extends StatelessWidget {
+class MainMenuScreen extends StatefulWidget {
   const MainMenuScreen({super.key});
+
+  @override
+  State<MainMenuScreen> createState() => _MainMenuScreenState();
+}
+
+class _MainMenuScreenState extends State<MainMenuScreen> {
+  /// Navigate to authentication screen
+  void _navigateToAuth(BuildContext context) {
+    try {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const AuthScreen()),
+      );
+    } catch (e) {
+      debugPrint('Navigation to Auth failed: $e');
+      _showErrorDialog(
+        context,
+        'Failed to open authentication screen. Please try again.',
+      );
+    }
+  }
+
+  /// Handle sign out
+  Future<void> _handleSignOut(BuildContext context) async {
+    try {
+      await SupabaseService.signOut();
+      if (mounted) {
+        setState(() {}); // Refresh the UI
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Signed out successfully'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted && context.mounted) {
+        _showErrorDialog(context, 'Failed to sign out. Please try again.');
+      }
+    }
+  }
 
   /// Navigate to Zener Game Screen with error handling
   void _navigateToZenerGame(BuildContext context) {
@@ -19,115 +64,6 @@ class MainMenuScreen extends StatelessWidget {
         'Failed to start Zener Cards game. Please try again.',
       );
     }
-  }
-
-  /// Show coming soon dialog for placeholder features
-  void _showComingSoonDialog(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          title: Row(
-            children: [
-              Icon(Icons.construction, color: colorScheme.primary, size: 28),
-              const SizedBox(width: 12),
-              Text(
-                'Coming Soon',
-                style: theme.textTheme.headlineSmall?.copyWith(
-                  color: colorScheme.primary,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'More psychic games are under development!',
-                style: theme.textTheme.bodyLarge?.copyWith(
-                  color: colorScheme.onSurface,
-                ),
-              ),
-              const SizedBox(height: 16),
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: colorScheme.primaryContainer.withValues(alpha: 0.3),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: colorScheme.primary.withValues(alpha: 0.3),
-                    width: 1,
-                  ),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Upcoming Features:',
-                      style: theme.textTheme.titleSmall?.copyWith(
-                        color: colorScheme.primary,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    _buildFeatureItem(context, '🔮', 'Crystal Ball Reading'),
-                    _buildFeatureItem(context, '🃏', 'Tarot Card Divination'),
-                    _buildFeatureItem(context, '🌟', 'Aura Color Detection'),
-                    _buildFeatureItem(context, '🎯', 'Remote Viewing Tests'),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              style: TextButton.styleFrom(
-                foregroundColor: colorScheme.primary,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 12,
-                ),
-              ),
-              child: const Text(
-                'Got it!',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  /// Build a feature item for the coming soon dialog
-  Widget _buildFeatureItem(BuildContext context, String emoji, String title) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2),
-      child: Row(
-        children: [
-          Text(emoji, style: const TextStyle(fontSize: 16)),
-          const SizedBox(width: 8),
-          Text(
-            title,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: colorScheme.onSurface.withValues(alpha: 0.8),
-            ),
-          ),
-        ],
-      ),
-    );
   }
 
   /// Show error dialog for navigation failures
@@ -243,19 +179,28 @@ class MainMenuScreen extends StatelessWidget {
                       MediaQuery.of(context).size.width,
                     ),
                   ),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      Text(
-                        'Explore the mysteries of the mind',
-                        style: _getResponsiveFooterTextStyle(
-                          context,
-                          theme,
-                          colorScheme,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ],
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      // Only show footer text if there's enough space
+                      if (constraints.maxHeight > 30) {
+                        return Column(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            Text(
+                              'Explore the mysteries of the mind',
+                              style: _getResponsiveFooterTextStyle(
+                                context,
+                                theme,
+                                colorScheme,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
+                        );
+                      } else {
+                        return const SizedBox.shrink();
+                      }
+                    },
                   ),
                 ),
               ),
@@ -293,6 +238,9 @@ class MainMenuScreen extends StatelessWidget {
   }
 
   Widget _buildVerticalButtonLayout(BuildContext context, double spacing) {
+    final isSignedIn = SupabaseService.isSignedIn;
+    final userDisplayName = SupabaseService.userDisplayName;
+
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
@@ -306,19 +254,31 @@ class MainMenuScreen extends StatelessWidget {
         ),
         SizedBox(height: spacing),
 
-        // Coming Soon Button (Secondary)
-        _buildSecondaryButton(
-          context: context,
-          icon: Icons.lock_clock,
-          title: 'More Games',
-          subtitle: 'Coming Soon',
-          onPressed: () => _showComingSoonDialog(context),
-        ),
+        // Authentication Button (Secondary)
+        if (isSignedIn)
+          _buildSecondaryButton(
+            context: context,
+            icon: Icons.person,
+            title: userDisplayName ?? 'User',
+            subtitle: 'Tap to sign out',
+            onPressed: () => _handleSignOut(context),
+          )
+        else
+          _buildSecondaryButton(
+            context: context,
+            icon: Icons.login,
+            title: 'Sign In',
+            subtitle: 'Save your scores',
+            onPressed: () => _navigateToAuth(context),
+          ),
       ],
     );
   }
 
   Widget _buildHorizontalButtonLayout(BuildContext context, double spacing) {
+    final isSignedIn = SupabaseService.isSignedIn;
+    final userDisplayName = SupabaseService.userDisplayName;
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
@@ -334,15 +294,23 @@ class MainMenuScreen extends StatelessWidget {
         ),
         SizedBox(width: spacing),
 
-        // Coming Soon Button (Secondary)
+        // Authentication Button (Secondary)
         Expanded(
-          child: _buildSecondaryButton(
-            context: context,
-            icon: Icons.lock_clock,
-            title: 'More Games',
-            subtitle: 'Coming Soon',
-            onPressed: () => _showComingSoonDialog(context),
-          ),
+          child: isSignedIn
+              ? _buildSecondaryButton(
+                  context: context,
+                  icon: Icons.person,
+                  title: userDisplayName ?? 'User',
+                  subtitle: 'Tap to sign out',
+                  onPressed: () => _handleSignOut(context),
+                )
+              : _buildSecondaryButton(
+                  context: context,
+                  icon: Icons.login,
+                  title: 'Sign In',
+                  subtitle: 'Save your scores',
+                  onPressed: () => _navigateToAuth(context),
+                ),
         ),
       ],
     );
@@ -669,7 +637,9 @@ class MainMenuScreen extends StatelessWidget {
                 ),
               ),
               Icon(
-                Icons.schedule,
+                SupabaseService.isSignedIn
+                    ? Icons.logout
+                    : Icons.arrow_forward_ios,
                 color: colorScheme.onSurface.withValues(alpha: 0.4),
                 size: 20,
               ),

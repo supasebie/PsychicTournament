@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../models/zener_symbol.dart';
 
 /// Dialog widget that displays the final score and provides play again functionality
 class FinalScoreDialog extends StatefulWidget {
@@ -8,11 +9,19 @@ class FinalScoreDialog extends StatefulWidget {
   /// Callback function to handle play again action
   final VoidCallback onPlayAgain;
 
+  /// Optional game results data for detailed review
+  final List<List<ZenerSymbol>>? gameResults;
+
+  /// Optional callback for viewing detailed results
+  final VoidCallback? onViewResults;
+
   /// Creates a FinalScoreDialog with the given score and play again callback
   const FinalScoreDialog({
     super.key,
     required this.score,
     required this.onPlayAgain,
+    this.gameResults,
+    this.onViewResults,
   });
 
   @override
@@ -217,37 +226,91 @@ class _FinalScoreDialogState extends State<FinalScoreDialog>
           actions: [
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 8),
-              child: SizedBox(
-                width: double.infinity,
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 300),
-                  child: ElevatedButton(
-                    onPressed: widget.onPlayAgain,
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      elevation: 4,
-                      backgroundColor: Theme.of(context).colorScheme.primary,
-                      foregroundColor: Theme.of(context).colorScheme.onPrimary,
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.refresh, size: 20),
-                        const SizedBox(width: 8),
-                        const Text(
-                          'Play Again',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
+              child: Column(
+                children: [
+                  // View Detailed Results button (only shown when gameResults and callback are provided)
+                  if (widget.gameResults != null &&
+                      widget.onViewResults != null)
+                    SizedBox(
+                      width: double.infinity,
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 300),
+                        child: OutlinedButton(
+                          onPressed: widget.onViewResults,
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            side: BorderSide(
+                              color: Theme.of(context).colorScheme.primary,
+                              width: 2,
+                            ),
+                            foregroundColor: Theme.of(
+                              context,
+                            ).colorScheme.primary,
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.analytics_outlined, size: 20),
+                              const SizedBox(width: 8),
+                              const Text(
+                                'View Detailed Results',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                      ],
+                      ),
+                    ),
+
+                  // Add spacing between buttons if both are shown
+                  if (widget.gameResults != null &&
+                      widget.onViewResults != null)
+                    const SizedBox(height: 12),
+
+                  // Play Again button
+                  SizedBox(
+                    width: double.infinity,
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 300),
+                      child: ElevatedButton(
+                        onPressed: widget.onPlayAgain,
+                        style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          elevation: 4,
+                          backgroundColor: Theme.of(
+                            context,
+                          ).colorScheme.primary,
+                          foregroundColor: Theme.of(
+                            context,
+                          ).colorScheme.onPrimary,
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.refresh, size: 20),
+                            const SizedBox(width: 8),
+                            const Text(
+                              'Play Again',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
                   ),
-                ),
+                ],
               ),
             ),
           ],

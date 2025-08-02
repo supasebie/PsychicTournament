@@ -9,6 +9,7 @@ import '../widgets/card_reveal_widget.dart';
 import '../widgets/final_score_dialog.dart';
 import '../widgets/feedback_overlay_widget.dart';
 import '../services/haptic_feedback_service.dart';
+import 'results_review_screen.dart';
 
 /// Main game screen that manages the complete Zener card game experience
 class ZenerGameScreen extends StatefulWidget {
@@ -323,16 +324,18 @@ class _ZenerGameScreenState extends State<ZenerGameScreen> {
     }
   }
 
-  /// Handles game completion and shows final score
+  /// Handles game completion and navigates directly to results screen
   void _handleGameCompletion() {
     try {
-      // Show final score dialog after a brief delay
+      // Navigate directly to results screen after a brief delay
       Timer(const Duration(milliseconds: 2500), () {
         if (mounted) {
           try {
-            _showFinalScoreDialog();
+            _navigateToResultsScreen();
           } catch (e) {
-            debugPrint('Error showing final score dialog: $e');
+            debugPrint('Error navigating to results screen: $e');
+            // Fallback: show final score dialog
+            _showFinalScoreDialog();
           }
         }
       });
@@ -350,6 +353,9 @@ class _ZenerGameScreenState extends State<ZenerGameScreen> {
     if (!mounted) return;
 
     try {
+      // Retrieve game results from controller
+      final gameResults = _gameController.getGameResults();
+
       showDialog(
         context: context,
         barrierDismissible: false,
@@ -357,6 +363,8 @@ class _ZenerGameScreenState extends State<ZenerGameScreen> {
           return FinalScoreDialog(
             score: _currentScore,
             onPlayAgain: _playAgain,
+            gameResults: gameResults,
+            onViewResults: () => _navigateToResultsReview(gameResults),
           );
         },
       );
@@ -392,6 +400,65 @@ class _ZenerGameScreenState extends State<ZenerGameScreen> {
     }
 
     _initializeGame();
+  }
+
+  /// Navigates directly to the results screen (replaces popup dialog)
+  void _navigateToResultsScreen() {
+    if (!mounted) return;
+
+    try {
+      // Retrieve game results from controller
+      final gameResults = _gameController.getGameResults();
+
+      // Validate game results before navigation
+      if (gameResults.isEmpty) {
+        debugPrint('Warning: Game results are empty, showing dialog instead');
+        _showFinalScoreDialog();
+        return;
+      }
+
+      // Navigate to results review screen with replacement navigation
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (context) => ResultsReviewScreen(
+            gameResults: gameResults,
+            finalScore: _currentScore,
+            // No callbacks needed since ResultsReviewScreen handles navigation directly
+          ),
+        ),
+      );
+    } catch (e) {
+      debugPrint('Error navigating to results screen: $e');
+      // Fallback: show final score dialog
+      _showFinalScoreDialog();
+    }
+  }
+
+  /// Navigates to the results review screen with game results data (legacy method for dialog)
+  void _navigateToResultsReview(List<List<ZenerSymbol>> gameResults) {
+    try {
+      // Close the final score dialog first
+      Navigator.of(context).pop();
+
+      // Navigate to results review screen
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (context) => ResultsReviewScreen(
+            gameResults: gameResults,
+            finalScore: _currentScore,
+            // No callbacks needed since ResultsReviewScreen handles navigation directly
+          ),
+        ),
+      );
+    } catch (e) {
+      debugPrint('Error navigating to results review: $e');
+      // Fallback: just close the dialog
+      try {
+        Navigator.of(context).pop();
+      } catch (popError) {
+        debugPrint('Error closing dialog in fallback: $popError');
+      }
+    }
   }
 
   /// Toggles debug mode on/off
