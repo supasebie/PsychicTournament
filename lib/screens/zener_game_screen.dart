@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 import '../controllers/game_controller.dart';
 import '../models/zener_symbol.dart';
 import '../models/guess_result.dart';
@@ -9,6 +10,7 @@ import '../widgets/card_reveal_widget.dart';
 import '../widgets/final_score_dialog.dart';
 import '../widgets/feedback_overlay_widget.dart';
 import '../services/haptic_feedback_service.dart';
+import '../services/ad_service.dart';
 import 'results_review_screen.dart';
 
 /// Main game screen that manages the complete Zener card game experience
@@ -21,6 +23,9 @@ class ZenerGameScreen extends StatefulWidget {
 
 class _ZenerGameScreenState extends State<ZenerGameScreen> {
   late GameController _gameController;
+
+  // Interstitial ad reference for after-session placement (no ads during gameplay).
+  InterstitialAd? _postSessionInterstitial;
 
   // Game state variables
   int _currentScore = 0;
@@ -45,6 +50,8 @@ class _ZenerGameScreenState extends State<ZenerGameScreen> {
   void initState() {
     super.initState();
     _initializeGame();
+    // Preload interstitial for end-of-session.
+    _loadPostSessionInterstitial();
   }
 
   @override
@@ -60,6 +67,10 @@ class _ZenerGameScreenState extends State<ZenerGameScreen> {
     _feedbackTimer = null;
     _scoreUpdateTimer = null;
     _overlayTimer = null;
+
+    try {
+      _postSessionInterstitial?.dispose();
+    } catch (_) {}
 
     super.dispose();
   }
@@ -324,24 +335,28 @@ class _ZenerGameScreenState extends State<ZenerGameScreen> {
     }
   }
 
-  /// Handles game completion and navigates directly to results screen
+  /// Handles game completion and navigates to results screen.
+  /// Shows an interstitial ad (if loaded) just before navigating to results.
   void _handleGameCompletion() {
     try {
-      // Navigate directly to results screen after a brief delay
-      Timer(const Duration(milliseconds: 2500), () {
-        if (mounted) {
-          try {
-            _navigateToResultsScreen();
-          } catch (e) {
-            debugPrint('Error navigating to results screen: $e');
-            // Fallback: show final score dialog
-            _showFinalScoreDialog();
-          }
+      // Short delay for UX polish
+      Timer(const Duration(milliseconds: 2500), () async {
+        if (!mounted) return;
+        try {
+          await _maybeShowPostSessionInterstitial();
+        } catch (e) {
+          debugPrint('Interstitial show error: $e');
+        }
+        // Proceed to results
+        try {
+          _navigateToResultsScreen();
+        } catch (e) {
+          debugPrint('Error navigating to results screen: $e');
+          _showFinalScoreDialog();
         }
       });
     } catch (e) {
       debugPrint('Error handling game completion: $e');
-      // Fallback: show dialog immediately
       if (mounted) {
         _showFinalScoreDialog();
       }
@@ -890,5 +905,51 @@ class _ZenerGameScreenState extends State<ZenerGameScreen> {
         ),
       ),
     );
+  }
+  // ---------------- Ad helpers: Interstitial after session end ----------------
+
+  void _loadPostSessionInterstitial() {
+    // Use official callback API from google_mobile_ads samples.
+    AdService.loadInterstitial(
+      onLoaded: (ad) {
+        _postSessionInterstitial = ad;
+        // Set lifecycle callbacks
+        _postSessionInterstitial?.fullScreenContentCallback =
+            FullScreenContentCallback(
+              onAdShowedFullScreenContent: (ad) {},
+              onAdImpression: (ad) {},
+              onAdFailedToShowFullScreenContent: (ad, err) {
+                debugPrint('Interstitial failed to show: $err');
+                ad.dispose();
+                _postSessionInterstitial = null;
+              },
+              onAdDismissedFullScreenContent: (ad) {
+                ad.dispose();
+                _postSessionInterstitial = null;
+              },
+              onAdClicked: (ad) {},
+            );
+      },
+      onFailedToLoad: (error) {
+        debugPrint('Interstitial failed to load: $error');
+        _postSessionInterstitial = null;
+      },
+    );
+  }
+
+  Future<void> _maybeShowPostSessionInterstitial() async {
+    final ad = _postSessionInterstitial;
+    if (ad == null) {
+      // Optionally kick off another load for next time; don't block UX now.
+      _loadPostSessionInterstitial();
+      return;
+    }
+    try {
+      await ad.show();
+    } catch (e) {
+      debugPrint('Error showing interstitial: $e');
+    } finally {
+      _postSessionInterstitial = null;
+    }
   }
 }

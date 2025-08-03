@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import '../database/models/game_session.dart';
 import '../database/services/game_database_service.dart';
 import '../database/database_exceptions.dart';
-import 'session_detail_screen.dart';
 
 /// Screen displaying a chronological list of all game sessions
 /// Supports pull-to-refresh, loading states, and error handling
@@ -66,7 +65,7 @@ class _GameHistoryScreenState extends State<GameHistoryScreen> {
 
   /// Format date and time for display
   String _formatDateTime(DateTime dateTime) {
-    return '${dateTime.day}/${dateTime.month}/${dateTime.year} '
+    return '${dateTime.month}/${dateTime.day}/${dateTime.year} '
         '${dateTime.hour.toString().padLeft(2, '0')}:'
         '${dateTime.minute.toString().padLeft(2, '0')}';
   }
@@ -222,11 +221,11 @@ class _GameHistoryScreenState extends State<GameHistoryScreen> {
             ],
           ),
           onTap: () async {
-            final wasDeleted = await Navigator.of(context).push<bool>(
-              MaterialPageRoute(
-                builder: (context) => SessionDetailScreen(session: session),
-              ),
-            );
+            final wasDeleted =
+                await Navigator.of(
+                      context,
+                    ).pushNamed('/session-detail', arguments: session)
+                    as bool?;
 
             // If session was deleted from detail screen, refresh the list
             if (wasDeleted == true) {

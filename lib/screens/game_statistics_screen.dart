@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:fl_chart/fl_chart.dart';
 import '../database/models/game_statistics.dart';
 import '../database/services/game_statistics_service.dart';
 import '../database/database_exceptions.dart';
@@ -19,6 +20,15 @@ class _GameStatisticsScreenState extends State<GameStatisticsScreen> {
   bool _isLoading = true;
   String? _errorMessage;
 
+  // Date range filtering
+  DateTime? _startDate;
+  DateTime? _endDate;
+  TrendGrouping _selectedGrouping = TrendGrouping.daily;
+
+  // Chart display options
+  bool _showScoreChart = true;
+  bool _showHitRateChart = true;
+
   @override
   void initState() {
     super.initState();
@@ -35,7 +45,18 @@ class _GameStatisticsScreenState extends State<GameStatisticsScreen> {
     });
 
     try {
-      final statistics = await _statisticsService.calculateStatistics();
+      GameStatistics statistics;
+
+      if (_startDate != null && _endDate != null) {
+        // Load statistics for the selected date range
+        statistics = await _statisticsService.getStatisticsByDateRange(
+          _startDate!,
+          _endDate!,
+        );
+      } else {
+        // Load all statistics
+        statistics = await _statisticsService.calculateStatistics();
+      }
 
       if (mounted) {
         setState(() {
@@ -58,6 +79,42 @@ class _GameStatisticsScreenState extends State<GameStatisticsScreen> {
   /// Refresh statistics data
   Future<void> _refreshStatistics() async {
     await _loadStatistics();
+  }
+
+  /// Show date range picker dialog
+  Future<void> _showDateRangePicker() async {
+    final DateTimeRange? picked = await showDateRangePicker(
+      context: context,
+      firstDate: DateTime(2020),
+      lastDate: DateTime.now(),
+      initialDateRange: _startDate != null && _endDate != null
+          ? DateTimeRange(start: _startDate!, end: _endDate!)
+          : null,
+    );
+
+    if (picked != null) {
+      setState(() {
+        _startDate = picked.start;
+        _endDate = picked.end;
+      });
+      await _loadStatistics();
+    }
+  }
+
+  /// Clear date range filter
+  void _clearDateFilter() {
+    setState(() {
+      _startDate = null;
+      _endDate = null;
+    });
+    _loadStatistics();
+  }
+
+  /// Change trend grouping
+  void _changeTrendGrouping(TrendGrouping grouping) {
+    setState(() {
+      _selectedGrouping = grouping;
+    });
   }
 
   @override
@@ -149,7 +206,9 @@ class _GameStatisticsScreenState extends State<GameStatisticsScreen> {
             Icon(
               Icons.analytics_outlined,
               size: 64,
-              color: Theme.of(context).colorScheme.primary.withOpacity(0.6),
+              color: Theme.of(
+                context,
+              ).colorScheme.primary.withValues(alpha: 0.6),
             ),
             const SizedBox(height: 16),
             Text(
@@ -185,15 +244,506 @@ class _GameStatisticsScreenState extends State<GameStatisticsScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            _buildDateFilterSection(),
+            const SizedBox(height: 16),
             _buildOverallStatsSection(),
             const SizedBox(height: 24),
             _buildPerformanceSection(),
             const SizedBox(height: 24),
+            if (_statistics!.trends.isNotEmpty) ...[
+              _buildTrendsSection(),
+              const SizedBox(height: 24),
+            ],
             _buildDetailedStatsSection(),
           ],
         ),
       ),
     );
+  }
+
+  /// Build date filter section
+  Widget _buildDateFilterSection() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Date Range Filter',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+                if (_startDate != null && _endDate != null)
+                  TextButton.icon(
+                    onPressed: _clearDateFilter,
+                    icon: const Icon(Icons.clear, size: 16),
+                    label: const Text('Clear'),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: _showDateRangePicker,
+                    icon: const Icon(Icons.date_range),
+                    label: Text(
+                      _startDate != null && _endDate != null
+                          ? '${_formatDate(_startDate!)} - ${_formatDate(_endDate!)}'
+                          : 'Select Date Range',
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            if (_startDate != null && _endDate != null) ...[
+              const SizedBox(height: 12),
+              Text(
+                'Showing data from ${_formatDate(_startDate!)} to ${_formatDate(_endDate!)}',
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Build trends visualization section
+  Widget _buildTrendsSection() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Performance Trends',
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
+                PopupMenuButton<TrendGrouping>(
+                  icon: const Icon(Icons.more_vert),
+                  onSelected: _changeTrendGrouping,
+                  itemBuilder: (context) => [
+                    const PopupMenuItem(
+                      value: TrendGrouping.daily,
+                      child: Text('Daily'),
+                    ),
+                    const PopupMenuItem(
+                      value: TrendGrouping.weekly,
+                      child: Text('Weekly'),
+                    ),
+                    const PopupMenuItem(
+                      value: TrendGrouping.monthly,
+                      child: Text('Monthly'),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            _buildChartToggleButtons(),
+            const SizedBox(height: 16),
+            if (_showScoreChart) ...[
+              _buildScoreChart(),
+              const SizedBox(height: 24),
+            ],
+            if (_showHitRateChart) ...[
+              _buildHitRateChart(),
+              const SizedBox(height: 16),
+            ],
+            _buildTrendInsights(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Build chart toggle buttons
+  Widget _buildChartToggleButtons() {
+    return Row(
+      children: [
+        Expanded(
+          child: FilterChip(
+            label: const Text('Score Trend'),
+            selected: _showScoreChart,
+            onSelected: (selected) {
+              setState(() {
+                _showScoreChart = selected;
+              });
+            },
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: FilterChip(
+            label: const Text('Hit Rate Trend'),
+            selected: _showHitRateChart,
+            onSelected: (selected) {
+              setState(() {
+                _showHitRateChart = selected;
+              });
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Build score trend chart
+  Widget _buildScoreChart() {
+    if (_statistics!.trends.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    final trends = _statistics!.trends.reversed
+        .toList(); // Show chronologically
+    final maxScore = trends
+        .map((t) => t.averageScore)
+        .reduce((a, b) => a > b ? a : b);
+    final minScore = trends
+        .map((t) => t.averageScore)
+        .reduce((a, b) => a < b ? a : b);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Average Score Over Time',
+          style: Theme.of(context).textTheme.titleMedium,
+        ),
+        const SizedBox(height: 12),
+        SizedBox(
+          height: 200,
+          child: LineChart(
+            LineChartData(
+              gridData: FlGridData(
+                show: true,
+                drawVerticalLine: true,
+                horizontalInterval: 5,
+                verticalInterval: 1,
+                getDrawingHorizontalLine: (value) {
+                  return FlLine(
+                    color: Colors.grey.withValues(alpha: 0.3),
+                    strokeWidth: 1,
+                  );
+                },
+                getDrawingVerticalLine: (value) {
+                  return FlLine(
+                    color: Colors.grey.withValues(alpha: 0.3),
+                    strokeWidth: 1,
+                  );
+                },
+              ),
+              titlesData: FlTitlesData(
+                show: true,
+                rightTitles: const AxisTitles(
+                  sideTitles: SideTitles(showTitles: false),
+                ),
+                topTitles: const AxisTitles(
+                  sideTitles: SideTitles(showTitles: false),
+                ),
+                bottomTitles: AxisTitles(
+                  sideTitles: SideTitles(
+                    showTitles: true,
+                    reservedSize: 30,
+                    interval: 1,
+                    getTitlesWidget: (value, meta) {
+                      final index = value.toInt();
+                      if (index >= 0 && index < trends.length) {
+                        return SideTitleWidget(
+                          axisSide: meta.axisSide,
+                          child: Text(
+                            _formatTrendDate(trends[index].date),
+                            style: const TextStyle(fontSize: 10),
+                          ),
+                        );
+                      }
+                      return const Text('');
+                    },
+                  ),
+                ),
+                leftTitles: AxisTitles(
+                  sideTitles: SideTitles(
+                    showTitles: true,
+                    interval: 5,
+                    reservedSize: 40,
+                    getTitlesWidget: (value, meta) {
+                      return SideTitleWidget(
+                        axisSide: meta.axisSide,
+                        child: Text(
+                          value.toInt().toString(),
+                          style: const TextStyle(fontSize: 10),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ),
+              borderData: FlBorderData(
+                show: true,
+                border: Border.all(color: Colors.grey.withValues(alpha: 0.3)),
+              ),
+              minX: 0,
+              maxX: (trends.length - 1).toDouble(),
+              minY: (minScore - 2).clamp(0, 25),
+              maxY: (maxScore + 2).clamp(0, 25),
+              lineBarsData: [
+                LineChartBarData(
+                  spots: trends.asMap().entries.map((entry) {
+                    return FlSpot(
+                      entry.key.toDouble(),
+                      entry.value.averageScore,
+                    );
+                  }).toList(),
+                  isCurved: true,
+                  color: Theme.of(context).colorScheme.primary,
+                  barWidth: 3,
+                  isStrokeCapRound: true,
+                  dotData: const FlDotData(show: true),
+                  belowBarData: BarAreaData(
+                    show: true,
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.primary.withValues(alpha: 0.1),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Build hit rate trend chart
+  Widget _buildHitRateChart() {
+    if (_statistics!.trends.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    final trends = _statistics!.trends.reversed
+        .toList(); // Show chronologically
+    final maxHitRate = trends
+        .map((t) => t.hitRate)
+        .reduce((a, b) => a > b ? a : b);
+    final minHitRate = trends
+        .map((t) => t.hitRate)
+        .reduce((a, b) => a < b ? a : b);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Hit Rate Over Time',
+          style: Theme.of(context).textTheme.titleMedium,
+        ),
+        const SizedBox(height: 12),
+        SizedBox(
+          height: 200,
+          child: LineChart(
+            LineChartData(
+              gridData: FlGridData(
+                show: true,
+                drawVerticalLine: true,
+                horizontalInterval: 10,
+                verticalInterval: 1,
+                getDrawingHorizontalLine: (value) {
+                  return FlLine(
+                    color: value == 20
+                        ? Colors.orange.withValues(
+                            alpha: 0.8,
+                          ) // Expected 20% line
+                        : Colors.grey.withValues(alpha: 0.3),
+                    strokeWidth: value == 20 ? 2 : 1,
+                    dashArray: value == 20 ? [5, 5] : null,
+                  );
+                },
+                getDrawingVerticalLine: (value) {
+                  return FlLine(
+                    color: Colors.grey.withValues(alpha: 0.3),
+                    strokeWidth: 1,
+                  );
+                },
+              ),
+              titlesData: FlTitlesData(
+                show: true,
+                rightTitles: const AxisTitles(
+                  sideTitles: SideTitles(showTitles: false),
+                ),
+                topTitles: const AxisTitles(
+                  sideTitles: SideTitles(showTitles: false),
+                ),
+                bottomTitles: AxisTitles(
+                  sideTitles: SideTitles(
+                    showTitles: true,
+                    reservedSize: 30,
+                    interval: 1,
+                    getTitlesWidget: (value, meta) {
+                      final index = value.toInt();
+                      if (index >= 0 && index < trends.length) {
+                        return SideTitleWidget(
+                          axisSide: meta.axisSide,
+                          child: Text(
+                            _formatTrendDate(trends[index].date),
+                            style: const TextStyle(fontSize: 10),
+                          ),
+                        );
+                      }
+                      return const Text('');
+                    },
+                  ),
+                ),
+                leftTitles: AxisTitles(
+                  sideTitles: SideTitles(
+                    showTitles: true,
+                    interval: 10,
+                    reservedSize: 40,
+                    getTitlesWidget: (value, meta) {
+                      return SideTitleWidget(
+                        axisSide: meta.axisSide,
+                        child: Text(
+                          '${value.toInt()}%',
+                          style: const TextStyle(fontSize: 10),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ),
+              borderData: FlBorderData(
+                show: true,
+                border: Border.all(color: Colors.grey.withValues(alpha: 0.3)),
+              ),
+              minX: 0,
+              maxX: (trends.length - 1).toDouble(),
+              minY: (minHitRate - 5).clamp(0, 100),
+              maxY: (maxHitRate + 5).clamp(0, 100),
+              lineBarsData: [
+                LineChartBarData(
+                  spots: trends.asMap().entries.map((entry) {
+                    return FlSpot(entry.key.toDouble(), entry.value.hitRate);
+                  }).toList(),
+                  isCurved: true,
+                  color: _getHitRateColor(_statistics!.hitRate),
+                  barWidth: 3,
+                  isStrokeCapRound: true,
+                  dotData: const FlDotData(show: true),
+                  belowBarData: BarAreaData(
+                    show: true,
+                    color: _getHitRateColor(
+                      _statistics!.hitRate,
+                    ).withValues(alpha: 0.1),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'Orange dashed line shows expected 20% hit rate',
+          style: Theme.of(
+            context,
+          ).textTheme.bodySmall?.copyWith(color: Colors.orange),
+        ),
+      ],
+    );
+  }
+
+  /// Build trend insights
+  Widget _buildTrendInsights() {
+    if (_statistics!.trends.length < 2) {
+      return const SizedBox.shrink();
+    }
+
+    final trends = _statistics!.trends;
+    final recentTrend = trends.first;
+    final previousTrend = trends[1];
+
+    final scoreDifference =
+        recentTrend.averageScore - previousTrend.averageScore;
+    final hitRateDifference = recentTrend.hitRate - previousTrend.hitRate;
+
+    return Container(
+      padding: const EdgeInsets.all(12.0),
+      decoration: BoxDecoration(
+        color: Theme.of(
+          context,
+        ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+        borderRadius: BorderRadius.circular(8.0),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Recent Trend Analysis',
+            style: Theme.of(
+              context,
+            ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Icon(
+                scoreDifference >= 0 ? Icons.trending_up : Icons.trending_down,
+                color: scoreDifference >= 0 ? Colors.green : Colors.red,
+                size: 16,
+              ),
+              const SizedBox(width: 4),
+              Text(
+                'Score: ${scoreDifference >= 0 ? '+' : ''}${scoreDifference.toStringAsFixed(1)}',
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+              const SizedBox(width: 16),
+              Icon(
+                hitRateDifference >= 0
+                    ? Icons.trending_up
+                    : Icons.trending_down,
+                color: hitRateDifference >= 0 ? Colors.green : Colors.red,
+                size: 16,
+              ),
+              const SizedBox(width: 4),
+              Text(
+                'Hit Rate: ${hitRateDifference >= 0 ? '+' : ''}${hitRateDifference.toStringAsFixed(1)}%',
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Format date for display
+  String _formatDate(DateTime date) {
+    return '${date.day}/${date.month}/${date.year}';
+  }
+
+  /// Format trend date based on grouping
+  String _formatTrendDate(DateTime date) {
+    switch (_selectedGrouping) {
+      case TrendGrouping.daily:
+        return '${date.day}/${date.month}';
+      case TrendGrouping.weekly:
+        return 'W${_getWeekOfYear(date)}';
+      case TrendGrouping.monthly:
+        return '${date.month}/${date.year}';
+    }
+  }
+
+  /// Get week of year for date
+  int _getWeekOfYear(DateTime date) {
+    final firstDayOfYear = DateTime(date.year, 1, 1);
+    final daysSinceFirstDay = date.difference(firstDayOfYear).inDays;
+    return (daysSinceFirstDay / 7).ceil();
   }
 
   /// Build overall statistics section
@@ -325,9 +875,9 @@ class _GameStatisticsScreenState extends State<GameStatisticsScreen> {
     return Container(
       padding: const EdgeInsets.all(12.0),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(8.0),
-        border: Border.all(color: color.withOpacity(0.3)),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Column(
         children: [
@@ -378,7 +928,7 @@ class _GameStatisticsScreenState extends State<GameStatisticsScreen> {
         const SizedBox(height: 8),
         LinearProgressIndicator(
           value: hitRate / 100,
-          backgroundColor: Colors.grey.withOpacity(0.3),
+          backgroundColor: Colors.grey.withValues(alpha: 0.3),
           valueColor: AlwaysStoppedAnimation<Color>(_getHitRateColor(hitRate)),
         ),
         const SizedBox(height: 4),
@@ -428,9 +978,9 @@ class _GameStatisticsScreenState extends State<GameStatisticsScreen> {
     return Container(
       padding: const EdgeInsets.all(12.0),
       decoration: BoxDecoration(
-        color: insightColor.withOpacity(0.1),
+        color: insightColor.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(8.0),
-        border: Border.all(color: insightColor.withOpacity(0.3)),
+        border: Border.all(color: insightColor.withValues(alpha: 0.3)),
       ),
       child: Row(
         children: [

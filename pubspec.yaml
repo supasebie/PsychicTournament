@@ -39,6 +39,10 @@ dependencies:
   shared_preferences: ^2.2.2
   sqflite: ^2.3.0
   path: ^1.8.3
+  fl_chart: ^0.68.0
+
+  # Google Mobile Ads for AdMob (banners, interstitials, rewarded, app open)
+  google_mobile_ads: ^5.1.0
 
 dev_dependencies:
   # The "flutter_lints" package below contains a set of recommended lints to

@@ -130,7 +130,7 @@
     - Add navigation back to history screen
     - _Requirements: 2.3, 4.1, 4.2_
 
-- [ ] 8. Create statistics dashboard screen
+- [x] 8. Create statistics dashboard screen
 
   - [x] 8.1 Implement GameStatisticsScreen with overall performance metrics
 
@@ -140,18 +140,18 @@
     - Implement proper loading states for statistics calculations
     - _Requirements: 3.1, 3.2, 3.4_
 
-  - [ ] 8.2 Add performance trends and visualizations
+  - [x] 8.2 Add performance trends and visualizations
     - Implement basic charts or graphs showing performance over time
     - Add date range filtering options for statistics
     - Create visual representations of hit rate trends
     - Ensure responsive design for different screen sizes
     - _Requirements: 3.3_
 
-- [ ] 9. Add navigation integration to main app
+- [x] 9. Add navigation integration to main app
 
   - New button should be placed on the main menu
 
-  - [ ] 9.1 Update main menu with database-related navigation
+  - [x] 9.1 Update main menu with database-related navigation
 
     - Add "Game History" button to MainMenuScreen
     - Add "Statistics" button to MainMenuScreen
@@ -159,7 +159,7 @@
     - Ensure consistent UI design with existing app theme
     - _Requirements: 2.1, 3.1_
 
-  - [ ] 9.2 Update app routing and navigation structure
+  - [x] 9.2 Update app routing and navigation structure
     - Add named routes for new screens in main.dart
     - Implement proper navigation flow between all screens
     - Add back navigation handling for all new screens

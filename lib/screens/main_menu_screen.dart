@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'zener_game_screen.dart';
 import 'auth_screen.dart';
-import 'game_statistics_screen.dart';
 import '../services/supabase_service.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
+import '../services/ad_service.dart';
 
 class MainMenuScreen extends StatefulWidget {
   const MainMenuScreen({super.key});
@@ -12,6 +12,44 @@ class MainMenuScreen extends StatefulWidget {
 }
 
 class _MainMenuScreenState extends State<MainMenuScreen> {
+  BannerAd? _bannerAd;
+  bool _isBannerLoaded = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Create and load a standard banner at init. We render it in the footer if loaded.
+    final banner = AdService.createBanner(
+      size: AdSize.banner,
+      onAdLoaded: (ad) {
+        if (!mounted) return;
+        setState(() {
+          _bannerAd = ad as BannerAd;
+          _isBannerLoaded = true;
+        });
+      },
+      onAdFailedToLoad: (ad, error) {
+        // Already disposed in AdService listener; just mark as not loaded.
+        if (!mounted) return;
+        setState(() {
+          _bannerAd = null;
+          _isBannerLoaded = false;
+        });
+        debugPrint('Main menu banner failed to load: $error');
+      },
+    );
+    _bannerAd = banner;
+    banner.load();
+  }
+
+  @override
+  void dispose() {
+    try {
+      _bannerAd?.dispose();
+    } catch (_) {}
+    super.dispose();
+  }
+
   /// Navigate to authentication screen
   void _navigateToAuth(BuildContext context) {
     try {
@@ -53,10 +91,7 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
   /// Navigate to Zener Game Screen with error handling
   void _navigateToZenerGame(BuildContext context) {
     try {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => const ZenerGameScreen()),
-      );
+      Navigator.pushNamed(context, '/zener-game');
     } catch (e) {
       // Log error and show user-friendly message
       debugPrint('Navigation to Zener Game failed: $e');
@@ -70,16 +105,27 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
   /// Navigate to Game Statistics Screen with error handling
   void _navigateToGameStatistics(BuildContext context) {
     try {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => const GameStatisticsScreen()),
-      );
+      Navigator.pushNamed(context, '/game-statistics');
     } catch (e) {
       // Log error and show user-friendly message
       debugPrint('Navigation to Game Statistics failed: $e');
       _showErrorDialog(
         context,
         'Failed to open game statistics. Please try again.',
+      );
+    }
+  }
+
+  /// Navigate to Game History Screen with error handling
+  void _navigateToGameHistory(BuildContext context) {
+    try {
+      Navigator.pushNamed(context, '/game-history');
+    } catch (e) {
+      // Log error and show user-friendly message
+      debugPrint('Navigation to Game History failed: $e');
+      _showErrorDialog(
+        context,
+        'Failed to open game history. Please try again.',
       );
     }
   }
@@ -108,6 +154,11 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
+    // Reserve bottom padding when banner is loaded to prevent overlap
+    final double bannerHeight = (_isBannerLoaded && _bannerAd != null)
+        ? _bannerAd!.size.height.toDouble()
+        : 0.0;
+
     return Scaffold(
       body: Container(
         decoration: BoxDecoration(
@@ -121,107 +172,125 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
           ),
         ),
         child: SafeArea(
-          child: Column(
+          // Use a Stack so we can anchor the banner to the bottom safely
+          child: Stack(
             children: [
-              // Header Section (Top 25%)
-              Expanded(
-                flex: 2,
-                child: Container(
-                  width: double.infinity,
-                  padding: EdgeInsets.symmetric(
-                    horizontal: _getResponsiveHorizontalPadding(
-                      MediaQuery.of(context).size.width,
-                    ),
-                    vertical: 16.0,
-                  ),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      // App Title
-                      Text(
-                        'Psychic Tournament',
-                        style: _getResponsiveTitleStyle(
-                          context,
-                          theme,
-                          colorScheme,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                      SizedBox(
-                        height: _getResponsiveTitleSpacing(
-                          MediaQuery.of(context).size.width,
-                        ),
-                      ),
-                      // Subtitle
-                      Text(
-                        'Test Your Psychic Abilities',
-                        style: _getResponsiveSubtitleStyle(
-                          context,
-                          theme,
-                          colorScheme,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 16),
-                      // Decorative element
-                      Container(
-                        width: 80,
-                        height: 4,
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [
-                              colorScheme.primary,
-                              colorScheme.secondary,
-                            ],
-                          ),
-                          borderRadius: BorderRadius.circular(2),
-                        ),
-                      ),
-                    ],
-                  ),
+              // Main content with extra bottom padding so content doesn't hide under the ad
+              Padding(
+                padding: EdgeInsets.only(
+                  bottom: bannerHeight > 0 ? bannerHeight + 12 : 0,
                 ),
-              ),
-
-              // Navigation Section (Middle 60%)
-              Expanded(
-                flex: 5,
-                child: _buildResponsiveNavigationSection(context),
-              ),
-
-              // Footer Section (Bottom 15%)
-              Expanded(
-                flex: 1,
-                child: Container(
-                  padding: EdgeInsets.all(
-                    _getResponsiveFooterPadding(
-                      MediaQuery.of(context).size.width,
-                    ),
-                  ),
-                  child: LayoutBuilder(
-                    builder: (context, constraints) {
-                      // Only show footer text if there's enough space
-                      if (constraints.maxHeight > 30) {
-                        return Column(
-                          mainAxisAlignment: MainAxisAlignment.end,
+                child: Column(
+                  children: [
+                    // Header Section (Top 25%)
+                    Expanded(
+                      flex: 2,
+                      child: Container(
+                        width: double.infinity,
+                        padding: EdgeInsets.symmetric(
+                          horizontal: _getResponsiveHorizontalPadding(
+                            MediaQuery.of(context).size.width,
+                          ),
+                          vertical: 16.0,
+                        ),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
                           children: [
+                            // App Title
                             Text(
-                              'Explore the mysteries of the mind',
-                              style: _getResponsiveFooterTextStyle(
+                              'Psychic Tournament',
+                              style: _getResponsiveTitleStyle(
                                 context,
                                 theme,
                                 colorScheme,
                               ),
                               textAlign: TextAlign.center,
                             ),
+                            SizedBox(
+                              height: _getResponsiveTitleSpacing(
+                                MediaQuery.of(context).size.width,
+                              ),
+                            ),
+                            // Subtitle
+                            Text(
+                              'Test Your Psychic Abilities',
+                              style: _getResponsiveSubtitleStyle(
+                                context,
+                                theme,
+                                colorScheme,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: 16),
+                            // Decorative element
+                            Container(
+                              width: 80,
+                              height: 4,
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: [
+                                    colorScheme.primary,
+                                    colorScheme.secondary,
+                                  ],
+                                ),
+                                borderRadius: BorderRadius.circular(2),
+                              ),
+                            ),
                           ],
-                        );
-                      } else {
-                        return const SizedBox.shrink();
-                      }
-                    },
-                  ),
+                        ),
+                      ),
+                    ),
+
+                    // Navigation Section (Middle 60%)
+                    Expanded(
+                      flex: 5,
+                      child: _buildResponsiveNavigationSection(context),
+                    ),
+
+                    // Footer text only (banner is handled separately)
+                    Expanded(
+                      flex: 1,
+                      child: Container(
+                        padding: EdgeInsets.all(
+                          _getResponsiveFooterPadding(
+                            MediaQuery.of(context).size.width,
+                          ),
+                        ),
+                        alignment: Alignment.bottomCenter,
+                        child: Text(
+                          'Explore the mysteries of the mind',
+                          style: _getResponsiveFooterTextStyle(
+                            context,
+                            theme,
+                            colorScheme,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
+
+              // Bottom-anchored banner ad
+              if (_isBannerLoaded && _bannerAd != null)
+                Positioned(
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  child: SafeArea(
+                    top: false,
+                    left: false,
+                    right: false,
+                    child: Center(
+                      child: SizedBox(
+                        width: _bannerAd!.size.width.toDouble(),
+                        height: _bannerAd!.size.height.toDouble(),
+                        child: AdWidget(ad: _bannerAd!),
+                      ),
+                    ),
+                  ),
+                ),
             ],
           ),
         ),
@@ -272,6 +341,16 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
         ),
         SizedBox(height: spacing),
 
+        // Game History Button
+        _buildSecondaryButton(
+          context: context,
+          icon: Icons.history,
+          title: 'Game History',
+          subtitle: 'Review past sessions',
+          onPressed: () => _navigateToGameHistory(context),
+        ),
+        SizedBox(height: spacing),
+
         // Game Statistics Button
         _buildSecondaryButton(
           context: context,
@@ -318,6 +397,18 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
             title: 'Zener Cards',
             subtitle: 'Test ESP with classic cards',
             onPressed: () => _navigateToZenerGame(context),
+          ),
+        ),
+        SizedBox(width: spacing),
+
+        // Game History Button
+        Expanded(
+          child: _buildSecondaryButton(
+            context: context,
+            icon: Icons.history,
+            title: 'Game History',
+            subtitle: 'Review past sessions',
+            onPressed: () => _navigateToGameHistory(context),
           ),
         ),
         SizedBox(width: spacing),
