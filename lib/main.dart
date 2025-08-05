@@ -6,8 +6,12 @@ import 'screens/zener_game_screen.dart';
 import 'screens/game_history_screen.dart';
 import 'screens/game_statistics_screen.dart';
 import 'screens/session_detail_screen.dart';
+import 'screens/stats_menu_screen.dart';
 import 'services/supabase_service.dart';
 import 'database/models/game_session.dart';
+
+// App theme
+import 'theme/app_theme.dart';
 
 /// Simple AdMob initialization with test IDs.
 /// We initialize MobileAds before runApp to avoid first-ad jank.
@@ -53,24 +57,20 @@ class PsychicTournament extends StatelessWidget {
   static const String gameHistoryRoute = '/game-history';
   static const String gameStatisticsRoute = '/game-statistics';
   static const String sessionDetailRoute = '/session-detail';
+  static const String statsMenuRoute = '/stats-menu';
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Psychic Tournament',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: Colors.deepPurple,
-          brightness: Brightness.light,
-        ),
-        useMaterial3: true,
-      ),
+      theme: AppTheme.dark(),
       initialRoute: mainMenuRoute,
       routes: {
         mainMenuRoute: (context) => const MainMenuScreen(),
         zenerGameRoute: (context) => const ZenerGameScreen(),
         gameHistoryRoute: (context) => const GameHistoryScreen(),
         gameStatisticsRoute: (context) => const GameStatisticsScreen(),
+        statsMenuRoute: (context) => const PerformanceMenuScreen(),
       },
       onGenerateRoute: (settings) {
         // Handle routes that require parameters

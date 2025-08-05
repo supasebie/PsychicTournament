@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/zener_symbol.dart';
+import 'svg_symbol.dart';
+import 'shimmer.dart';
 
 /// Widget that displays five symbol buttons for user selection during the game
 class SymbolSelectionWidget extends StatelessWidget {
@@ -84,28 +86,17 @@ class SymbolSelectionWidget extends StatelessWidget {
             // Ensure minimum touch target size for accessibility
             minimumSize: const Size(44, 44),
           ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                symbol.iconData,
-                size: (buttonWidth * 0.4).clamp(24.0, 36.0),
-                semanticLabel: symbol.displayName,
-              ),
-              SizedBox(height: buttonHeight * 0.05),
-              Flexible(
-                child: Text(
-                  symbol.displayName,
-                  style: TextStyle(
-                    fontSize: (buttonWidth * 0.12).clamp(8.0, 12.0),
-                    fontWeight: FontWeight.w500,
-                  ),
-                  textAlign: TextAlign.center,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ],
+          child: PurpleGlowShimmer(
+            enabled: true,
+            period: const Duration(milliseconds: 2600),
+            angle: 0.6,
+            highlightWidth: 0.24,
+            child: SvgSymbol(
+              assetPath: symbol.assetPath,
+              size: (buttonWidth * 0.55).clamp(28.0, 48.0),
+              semanticLabel: symbol.displayName,
+              // Svg remains white; purple glow/shimmer will tint/shine over it.
+            ),
           ),
         ),
       ),

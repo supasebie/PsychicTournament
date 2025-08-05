@@ -3,6 +3,8 @@ import '../models/zener_symbol.dart';
 import '../database/services/game_database_service.dart';
 import '../database/converters/game_data_converter.dart';
 import '../database/database_exceptions.dart';
+import '../widgets/svg_symbol.dart';
+import '../services/high_scores_service.dart';
 
 /// Screen that displays detailed game results showing all 25 turns
 /// with user guesses compared to correct answers
@@ -46,6 +48,9 @@ class _ResultsReviewScreenState extends State<ResultsReviewScreen> {
     super.initState();
     // Automatically save the game data when the screen is initialized
     _saveGameData();
+
+    // Also attempt to save high score remotely (non-blocking) when applicable
+    _trySaveHighScoreRemote();
   }
 
   /// Saves the game data to the local database
@@ -104,6 +109,24 @@ class _ResultsReviewScreenState extends State<ResultsReviewScreen> {
     await _saveGameData();
   }
 
+  /// Attempts to save a qualifying high score (>= 11) to Supabase.
+  /// Silent and non-blocking; logs in debug mode only.
+  Future<void> _trySaveHighScoreRemote() async {
+    try {
+      final score = widget.finalScore;
+      if (score < 11) return;
+
+      // Use current time in UTC for explicitness; server has default now() if omitted.
+      await HighScoresService.instance.insertHighScore(
+        score: score,
+        recordedAtUtc: DateTime.now().toUtc(),
+      );
+    } catch (e) {
+      // Silent failure per requirements; do not surface to user
+      debugPrint('ResultsReviewScreen: Failed to save remote high score: $e');
+    }
+  }
+
   /// Builds an individual result cell showing user guess vs correct answer
   Widget _buildResultCell({
     required int turnNumber,
@@ -111,14 +134,19 @@ class _ResultsReviewScreenState extends State<ResultsReviewScreen> {
     required ZenerSymbol correctAnswer,
     required bool isCorrect,
   }) {
+    final Color bg = isCorrect ? Colors.green.shade100 : Colors.red.shade100;
+    final Color border = isCorrect
+        ? Colors.green.shade600
+        : Colors.red.shade600;
+    final Color divider = isCorrect
+        ? Colors.green.shade400
+        : Colors.red.shade400;
+
     return Container(
       decoration: BoxDecoration(
-        border: Border.all(
-          color: isCorrect ? Colors.blue.shade600 : Colors.grey.shade300,
-          width: isCorrect ? 2.5 : 1.0,
-        ),
-        borderRadius: BorderRadius.circular(6.0),
-        color: isCorrect ? Colors.blue.shade50 : Colors.grey.shade50,
+        border: Border.all(color: border, width: 2.0),
+        borderRadius: BorderRadius.circular(8.0),
+        color: bg,
       ),
       child: Row(
         children: [
@@ -128,15 +156,7 @@ class _ResultsReviewScreenState extends State<ResultsReviewScreen> {
               padding: const EdgeInsets.all(6.0),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    userGuess.iconData,
-                    size: 22,
-                    color: isCorrect
-                        ? Colors.blue.shade700
-                        : Colors.grey.shade700,
-                  ),
-                ],
+                children: [SvgSymbol(assetPath: userGuess.assetPath, size: 22)],
               ),
             ),
           ),
@@ -145,7 +165,7 @@ class _ResultsReviewScreenState extends State<ResultsReviewScreen> {
           Container(
             width: 1.5,
             height: double.infinity,
-            color: isCorrect ? Colors.blue.shade300 : Colors.grey.shade400,
+            color: divider,
             margin: const EdgeInsets.symmetric(vertical: 6.0),
           ),
 
@@ -156,13 +176,7 @@ class _ResultsReviewScreenState extends State<ResultsReviewScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(
-                    correctAnswer.iconData,
-                    size: 22,
-                    color: isCorrect
-                        ? Colors.blue.shade700
-                        : Colors.grey.shade700,
-                  ),
+                  SvgSymbol(assetPath: correctAnswer.assetPath, size: 22),
                 ],
               ),
             ),

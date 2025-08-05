@@ -2,12 +2,7 @@
   "mcpServers": {
     "supabase": {
       "command": "npx",
-      "args": [
-        "-y",
-        "@supabase/mcp-server-supabase@latest",
-        "--access-token",
-        "sbp_a9642730098b949d26effa4ad24d6e7f61105197"
-      ],
+      "args": ["-y", "@supabase/mcp-server-supabase@latest", "--access-token"],
       "env": {
         "PATH": "/Users/supasebie/.aspire/bin:/Users/supasebie/.nvm/versions/node/v20.12.0/bin:/Users/supasebie/.rvm/gems/ruby-3.0.0/bin:/Users/supasebie/.rvm/gems/ruby-3.0.0@global/bin:/Users/supasebie/.rvm/rubies/ruby-3.0.0/bin:/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:/System/Cryptexes/App/usr/bin:/usr/bin:/bin:/usr/sbin:/sbin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin:/Library/Apple/usr/bin:/Applications/VMware Fusion.app/Contents/Public:/usr/local/share/dotnet:~/.dotnet/tools:/usr/local/go/bin:/Library/Frameworks/Mono.framework/Versions/Current/Commands:/Users/supasebie/development/flutter/bin:/Users/supasebie/.rvm/gems/ruby-3.0.0/bin:/Users/supasebie/.rvm/gems/ruby-3.0.0@global/bin:/Users/supasebie/.rvm/rubies/ruby-3.0.0/bin:/Users/supasebie/development/flutter/bin/:/Users/supasebie/.cargo/bin:/Users/supasebie/.dotnet/tools:/Users/supasebie/Library/Android/sdk/tools:/Users/supasebie/Library/Android/sdk/tools/bin:/Users/supasebie/Library/Android/sdk/platform-tools:/Users/supasebie/Library/Application Support/JetBrains/Toolbox/scripts:/Users/supasebie/.rvm/bin:/Users/supasebie/.dotnet/tools:/Users/supasebie/development/flutter/bin:/Users/supasebie/development/flutter/bin:/Users/supasebie/Library/Android/sdk/tools:/Users/supasebie/Library/Android/sdk/tools/bin:/Users/supasebie/Library/Android/sdk/platform-tools:/Users/supasebie/Library/Application Support/JetBrains/Toolbox/scripts:/Users/supasebie/.local/bin:/Users/supasebie/.rvm/bin:/Users/supasebie/.local/bin:/Users/supasebie/.rvm/bin:/Users/supasebie/.pub-cache/bin:/Users/supasebie/.pub-cache/bin"
       }

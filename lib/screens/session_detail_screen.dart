@@ -5,6 +5,7 @@ import '../database/models/turn_result.dart';
 import '../database/services/game_database_service.dart';
 import '../database/database_exceptions.dart';
 import '../models/zener_symbol.dart';
+import '../widgets/svg_symbol.dart';
 
 /// Screen showing detailed turn-by-turn results for a specific game session
 /// Displays session metadata, 5x5 grid of results, and session-specific statistics
@@ -359,7 +360,7 @@ ${session.finalScore >= 13 ? '🌟 Above average performance!' : '💪 Keep prac
                 padding: const EdgeInsets.symmetric(vertical: 4),
                 child: Row(
                   children: [
-                    Icon(symbol.iconData, size: 20),
+                    SvgSymbol(assetPath: symbol.assetPath, size: 20),
                     const SizedBox(width: 8),
                     SizedBox(
                       width: 60,
@@ -502,19 +503,11 @@ ${session.finalScore >= 13 ? '🌟 Above average performance!' : '💪 Keep prac
           ),
           const SizedBox(height: 2),
           // User guess icon
-          Icon(
-            turnResult.userGuess.iconData,
-            size: 16,
-            color: Colors.blue.shade700,
-          ),
+          SvgSymbol(assetPath: turnResult.userGuess.assetPath, size: 16),
           // Correct answer icon (if different from guess)
           if (!isHit) ...[
             const SizedBox(height: 2),
-            Icon(
-              turnResult.correctAnswer.iconData,
-              size: 14,
-              color: Colors.grey.shade600,
-            ),
+            SvgSymbol(assetPath: turnResult.correctAnswer.assetPath, size: 14),
           ],
         ],
       ),

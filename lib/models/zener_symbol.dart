@@ -1,9 +1,7 @@
-import 'package:flutter/material.dart';
-
 /// Enum representing the five Zener card symbols used in psychic testing
 enum ZenerSymbol { circle, cross, waves, square, star }
 
-/// Extension methods for ZenerSymbol enum to provide display names and icons
+/// Extension methods for ZenerSymbol enum to provide display names and asset paths
 extension ZenerSymbolExtension on ZenerSymbol {
   /// Returns the human-readable display name for the symbol
   String get displayName {
@@ -21,37 +19,19 @@ extension ZenerSymbolExtension on ZenerSymbol {
     }
   }
 
-  /// Returns the Material Design icon for the symbol
-  /// Used as placeholder until custom assets are added
-  IconData get iconData {
-    switch (this) {
-      case ZenerSymbol.circle:
-        return Icons.circle_outlined;
-      case ZenerSymbol.cross:
-        return Icons.add;
-      case ZenerSymbol.waves:
-        return Icons.waves;
-      case ZenerSymbol.square:
-        return Icons.crop_square;
-      case ZenerSymbol.star:
-        return Icons.star_outline;
-    }
-  }
-
-  /// Returns the asset path for the symbol image
-  /// Will be used when custom assets are added
+  /// Returns the asset path for the SVG symbol image (new assets)
   String get assetPath {
     switch (this) {
       case ZenerSymbol.circle:
-        return 'assets/images/symbols/circle.svg';
+        return 'assets/zener/circle.svg';
       case ZenerSymbol.cross:
-        return 'assets/images/symbols/cross.svg';
+        return 'assets/zener/plus.svg';
       case ZenerSymbol.waves:
-        return 'assets/images/symbols/waves.svg';
+        return 'assets/zener/waves.svg';
       case ZenerSymbol.square:
-        return 'assets/images/symbols/square.svg';
+        return 'assets/zener/square.svg';
       case ZenerSymbol.star:
-        return 'assets/images/symbols/star.svg';
+        return 'assets/zener/star.svg';
     }
   }
 }

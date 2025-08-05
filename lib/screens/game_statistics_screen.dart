@@ -146,16 +146,8 @@ class _GameStatisticsScreenState extends State<GameStatisticsScreen> {
 
   /// Build loading state with progress indicator
   Widget _buildLoadingState() {
-    return const Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          CircularProgressIndicator(),
-          SizedBox(height: 16),
-          Text('Loading statistics...', style: TextStyle(fontSize: 16)),
-        ],
-      ),
-    );
+    // Show only the spinner to avoid layout/jank from early text flashes.
+    return const Center(child: CircularProgressIndicator());
   }
 
   /// Build error state with retry option

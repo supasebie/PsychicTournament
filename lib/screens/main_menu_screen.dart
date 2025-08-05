@@ -3,6 +3,9 @@ import 'auth_screen.dart';
 import '../services/supabase_service.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import '../services/ad_service.dart';
+import '../widgets/animated_gradient_background.dart';
+import '../widgets/glass_container.dart';
+import '../services/high_scores_service.dart';
 
 class MainMenuScreen extends StatefulWidget {
   const MainMenuScreen({super.key});
@@ -102,34 +105,6 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
     }
   }
 
-  /// Navigate to Game Statistics Screen with error handling
-  void _navigateToGameStatistics(BuildContext context) {
-    try {
-      Navigator.pushNamed(context, '/game-statistics');
-    } catch (e) {
-      // Log error and show user-friendly message
-      debugPrint('Navigation to Game Statistics failed: $e');
-      _showErrorDialog(
-        context,
-        'Failed to open game statistics. Please try again.',
-      );
-    }
-  }
-
-  /// Navigate to Game History Screen with error handling
-  void _navigateToGameHistory(BuildContext context) {
-    try {
-      Navigator.pushNamed(context, '/game-history');
-    } catch (e) {
-      // Log error and show user-friendly message
-      debugPrint('Navigation to Game History failed: $e');
-      _showErrorDialog(
-        context,
-        'Failed to open game history. Please try again.',
-      );
-    }
-  }
-
   /// Show error dialog for navigation failures
   void _showErrorDialog(BuildContext context, String message) {
     showDialog(
@@ -160,115 +135,156 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
         : 0.0;
 
     return Scaffold(
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              colorScheme.primary.withValues(alpha: 0.1),
-              colorScheme.surface,
-            ],
-          ),
-        ),
+      body: AnimatedGradientBackground(
         child: SafeArea(
           // Use a Stack so we can anchor the banner to the bottom safely
           child: Stack(
             children: [
               // Main content with extra bottom padding so content doesn't hide under the ad
+              // Wrap in SingleChildScrollView to prevent overflows on small screens.
               Padding(
                 padding: EdgeInsets.only(
                   bottom: bannerHeight > 0 ? bannerHeight + 12 : 0,
                 ),
-                child: Column(
-                  children: [
-                    // Header Section (Top 25%)
-                    Expanded(
-                      flex: 2,
-                      child: Container(
-                        width: double.infinity,
+                child: SingleChildScrollView(
+                  physics: const BouncingScrollPhysics(),
+                  child: Column(
+                    children: [
+                      // Header Section → Glass panel (no Expanded inside scroll)
+                      Padding(
                         padding: EdgeInsets.symmetric(
                           horizontal: _getResponsiveHorizontalPadding(
                             MediaQuery.of(context).size.width,
                           ),
                           vertical: 16.0,
                         ),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            // App Title
-                            Text(
-                              'Psychic Tournament',
-                              style: _getResponsiveTitleStyle(
-                                context,
-                                theme,
-                                colorScheme,
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                            SizedBox(
-                              height: _getResponsiveTitleSpacing(
-                                MediaQuery.of(context).size.width,
-                              ),
-                            ),
-                            // Subtitle
-                            Text(
-                              'Test Your Psychic Abilities',
-                              style: _getResponsiveSubtitleStyle(
-                                context,
-                                theme,
-                                colorScheme,
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                            const SizedBox(height: 16),
-                            // Decorative element
-                            Container(
-                              width: 80,
-                              height: 4,
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  colors: [
-                                    colorScheme.primary,
-                                    colorScheme.secondary,
-                                  ],
+                        child: GlassContainer(
+                          padding: const EdgeInsets.symmetric(
+                            vertical: 20,
+                            horizontal: 16,
+                          ),
+                          borderGradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [
+                              colorScheme.primary.withValues(alpha: 0.9),
+                              colorScheme.secondary.withValues(alpha: 0.9),
+                            ],
+                          ),
+                          borderWidth: 1.0,
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              // App Title
+                              Text(
+                                'Psychic Tournament',
+                                style: _getResponsiveTitleStyle(
+                                  context,
+                                  theme,
+                                  colorScheme,
                                 ),
-                                borderRadius: BorderRadius.circular(2),
+                                textAlign: TextAlign.center,
                               ),
-                            ),
-                          ],
+                              SizedBox(
+                                height: _getResponsiveTitleSpacing(
+                                  MediaQuery.of(context).size.width,
+                                ),
+                              ),
+                              // Subtitle
+                              Text(
+                                'Test Your Psychic Abilities',
+                                style: _getResponsiveSubtitleStyle(
+                                  context,
+                                  theme,
+                                  colorScheme,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                              const SizedBox(height: 16),
+                              // Decorative element
+                              Container(
+                                width: 80,
+                                height: 4,
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    colors: [
+                                      colorScheme.primary,
+                                      colorScheme.secondary,
+                                    ],
+                                  ),
+                                  borderRadius: BorderRadius.circular(2),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
-                    ),
-
-                    // Navigation Section (Middle 60%)
-                    Expanded(
-                      flex: 5,
-                      child: _buildResponsiveNavigationSection(context),
-                    ),
-
-                    // Footer text only (banner is handled separately)
-                    Expanded(
-                      flex: 1,
-                      child: Container(
+                      // Scoreboards Section
+                      Padding(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: _getResponsiveHorizontalPadding(
+                            MediaQuery.of(context).size.width,
+                          ),
+                        ),
+                        child: const _ScoreboardsCard(),
+                      ),
+                      // Navigation Section - intrinsic height inside scroll view
+                      Padding(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: _getResponsiveHorizontalPadding(
+                            MediaQuery.of(context).size.width,
+                          ),
+                        ),
+                        child: GlassContainer(
+                          padding: const EdgeInsets.all(20),
+                          borderRadius: 20,
+                          tintOpacity: 0.65,
+                          borderGradient: LinearGradient(
+                            colors: [
+                              colorScheme.primary.withValues(alpha: 0.75),
+                              colorScheme.secondary.withValues(alpha: 0.75),
+                            ],
+                          ),
+                          child: _buildResponsiveNavigationSection(context),
+                        ),
+                      ),
+                      // Footer text (chip) - intrinsic height
+                      Padding(
                         padding: EdgeInsets.all(
                           _getResponsiveFooterPadding(
                             MediaQuery.of(context).size.width,
                           ),
                         ),
-                        alignment: Alignment.bottomCenter,
-                        child: Text(
-                          'Explore the mysteries of the mind',
-                          style: _getResponsiveFooterTextStyle(
-                            context,
-                            theme,
-                            colorScheme,
+                        child: Align(
+                          alignment: Alignment.bottomCenter,
+                          child: GlassContainer(
+                            padding: const EdgeInsets.symmetric(
+                              vertical: 12,
+                              horizontal: 18,
+                            ),
+                            borderRadius: 14,
+                            tintOpacity: 0.6,
+                            borderGradient: LinearGradient(
+                              colors: [
+                                colorScheme.secondary.withValues(alpha: 0.8),
+                                colorScheme.primary.withValues(alpha: 0.8),
+                              ],
+                            ),
+                            borderWidth: 1.2,
+                            child: Text(
+                              'Explore the mysteries of the mind',
+                              style: _getResponsiveFooterTextStyle(
+                                context,
+                                theme,
+                                colorScheme,
+                              )?.copyWith(letterSpacing: 0.4),
+                              textAlign: TextAlign.center,
+                            ),
                           ),
-                          textAlign: TextAlign.center,
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
 
@@ -341,23 +357,15 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
         ),
         SizedBox(height: spacing),
 
-        // Game History Button
+        // My Games Menu Button (opens sub-menu with History & Statistics)
         _buildSecondaryButton(
           context: context,
-          icon: Icons.history,
-          title: 'Game History',
-          subtitle: 'Review past sessions',
-          onPressed: () => _navigateToGameHistory(context),
-        ),
-        SizedBox(height: spacing),
-
-        // Game Statistics Button
-        _buildSecondaryButton(
-          context: context,
-          icon: Icons.bar_chart,
-          title: 'Statistics',
-          subtitle: 'View your game stats',
-          onPressed: () => _navigateToGameStatistics(context),
+          icon: Icons.insights,
+          title: 'My Games',
+          subtitle: 'History and Statistics',
+          onPressed: () {
+            Navigator.pushNamed(context, '/stats-menu');
+          },
         ),
         SizedBox(height: spacing),
 
@@ -401,26 +409,16 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
         ),
         SizedBox(width: spacing),
 
-        // Game History Button
+        // Performance Menu Button (opens sub-menu with History & Statistics)
         Expanded(
           child: _buildSecondaryButton(
             context: context,
-            icon: Icons.history,
-            title: 'Game History',
-            subtitle: 'Review past sessions',
-            onPressed: () => _navigateToGameHistory(context),
-          ),
-        ),
-        SizedBox(width: spacing),
-
-        // Game Statistics Button
-        Expanded(
-          child: _buildSecondaryButton(
-            context: context,
-            icon: Icons.bar_chart,
-            title: 'Statistics',
-            subtitle: 'View your game stats',
-            onPressed: () => _navigateToGameStatistics(context),
+            icon: Icons.insights,
+            title: 'Performance',
+            subtitle: 'History and Statistics',
+            onPressed: () {
+              Navigator.pushNamed(context, '/stats-menu');
+            },
           ),
         ),
         SizedBox(width: spacing),
@@ -622,9 +620,9 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
     final screenWidth = MediaQuery.of(context).size.width;
     final buttonHeight = _getResponsiveButtonHeight(screenWidth);
 
-    return SizedBox(
-      width: double.infinity,
-      height: buttonHeight,
+    // Prevent text overflow by allowing subtitle to wrap and using flexible layout.
+    return ConstrainedBox(
+      constraints: BoxConstraints(minHeight: buttonHeight),
       child: Semantics(
         label: '$title - $subtitle',
         button: true,
@@ -645,6 +643,7 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
             ),
           ),
           child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Container(
                 padding: const EdgeInsets.all(12),
@@ -659,28 +658,36 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
                 ),
               ),
               SizedBox(width: _getResponsiveIconSpacing(screenWidth)),
+              // Let the text wrap and avoid overflow
               Expanded(
                 child: Column(
+                  mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
                       title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: theme.textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
+                        fontWeight: FontWeight.w600,
                         color: colorScheme.onPrimary,
                       ),
                     ),
-                    const SizedBox(height: 2),
+                    const SizedBox(height: 4),
                     Text(
                       subtitle,
+                      softWrap: true,
+                      maxLines: 2,
+                      overflow: TextOverflow.fade,
                       style: theme.textTheme.bodyMedium?.copyWith(
-                        color: colorScheme.onPrimary.withValues(alpha: 0.8),
+                        height: 1.2,
+                        color: colorScheme.onPrimary.withValues(alpha: 0.85),
                       ),
                     ),
                   ],
                 ),
               ),
+              const SizedBox(width: 8),
               Icon(
                 Icons.arrow_forward_ios,
                 color: colorScheme.onPrimary.withValues(alpha: 0.7),
@@ -705,9 +712,9 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
     final screenWidth = MediaQuery.of(context).size.width;
     final buttonHeight = _getResponsiveButtonHeight(screenWidth);
 
-    return SizedBox(
-      width: double.infinity,
-      height: buttonHeight,
+    // Prevent overflow in secondary buttons as well.
+    return ConstrainedBox(
+      constraints: BoxConstraints(minHeight: buttonHeight),
       child: Semantics(
         label: '$title - $subtitle',
         button: true,
@@ -716,7 +723,7 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
           onPressed: onPressed,
           style: OutlinedButton.styleFrom(
             backgroundColor: colorScheme.surface,
-            foregroundColor: colorScheme.onSurface.withValues(alpha: 0.6),
+            foregroundColor: colorScheme.onSurface.withValues(alpha: 0.7),
             side: BorderSide(
               color: colorScheme.outline.withValues(alpha: 0.5),
               width: 1.5,
@@ -730,54 +737,417 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
             ),
           ),
           child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: colorScheme.onSurface.withValues(alpha: 0.1),
+                  color: colorScheme.onSurface.withValues(alpha: 0.08),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(
                   icon,
                   size: _getResponsiveIconSize(screenWidth),
-                  color: colorScheme.onSurface.withValues(alpha: 0.6),
+                  color: colorScheme.onSurface.withValues(alpha: 0.65),
                 ),
               ),
               SizedBox(width: _getResponsiveIconSpacing(screenWidth)),
               Expanded(
                 child: Column(
+                  mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
                       title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: theme.textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: colorScheme.onSurface.withValues(alpha: 0.6),
+                        fontWeight: FontWeight.w600,
+                        color: colorScheme.onSurface.withValues(alpha: 0.75),
                       ),
                     ),
-                    const SizedBox(height: 2),
+                    const SizedBox(height: 4),
                     Text(
                       subtitle,
+                      softWrap: true,
+                      maxLines: 2,
+                      overflow: TextOverflow.fade,
                       style: theme.textTheme.bodyMedium?.copyWith(
-                        color: colorScheme.onSurface.withValues(alpha: 0.4),
+                        height: 1.2,
+                        color: colorScheme.onSurface.withValues(alpha: 0.5),
                         fontStyle: FontStyle.italic,
                       ),
                     ),
                   ],
                 ),
               ),
+              const SizedBox(width: 8),
               Icon(
                 SupabaseService.isSignedIn
                     ? Icons.logout
                     : Icons.arrow_forward_ios,
-                color: colorScheme.onSurface.withValues(alpha: 0.4),
+                color: colorScheme.onSurface.withValues(alpha: 0.5),
                 size: 20,
               ),
             ],
           ),
         ),
       ),
+    );
+  }
+}
+
+/// Scoreboards card showing today's top and this month's top scores.
+/// Uses UTC boundaries as defined by HighScoresService.
+class _ScoreboardsCard extends StatelessWidget {
+  const _ScoreboardsCard();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(22),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            colorScheme.primary.withValues(alpha: 0.25),
+            colorScheme.secondary.withValues(alpha: 0.25),
+            colorScheme.tertiary.withValues(alpha: 0.20),
+          ],
+        ),
+        border: Border.all(
+          color: colorScheme.primary.withValues(alpha: 0.35),
+          width: 1.2,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: colorScheme.primary.withValues(alpha: 0.25),
+            blurRadius: 16,
+            spreadRadius: 1,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: GlassContainer(
+        borderRadius: 22,
+        padding: const EdgeInsets.fromLTRB(18, 16, 18, 16),
+        tintOpacity: 0.55,
+        borderGradient: LinearGradient(
+          colors: [
+            colorScheme.primary.withValues(alpha: 0.6),
+            colorScheme.secondary.withValues(alpha: 0.6),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: const [
+            _ScoreSectionHeader(
+              icon: Icons.emoji_events,
+              title: 'Leaderboard',
+              color: null,
+            ),
+            SizedBox(height: 14),
+            _TodayTopTile(),
+            SizedBox(height: 10),
+            _MonthTopTile(),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ScoreSectionHeader extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final Color? color;
+
+  const _ScoreSectionHeader({
+    required this.icon,
+    required this.title,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final effectiveColor = color ?? Theme.of(context).colorScheme.primary;
+
+    return Column(
+      children: [
+        // Centered "Leaderboard" chip with accent gradient and subtle glow
+        Container(
+          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                effectiveColor.withValues(alpha: 0.22),
+                effectiveColor.withValues(alpha: 0.12),
+              ],
+            ),
+            border: Border.all(
+              color: effectiveColor.withValues(alpha: 0.45),
+              width: 1,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: effectiveColor.withValues(alpha: 0.25),
+                blurRadius: 14,
+                offset: const Offset(0, 6),
+              ),
+            ],
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, color: effectiveColor, size: 20),
+              const SizedBox(width: 8),
+              Text(
+                title,
+                textAlign: TextAlign.center,
+                style: theme.textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.w900,
+                  color: effectiveColor,
+                  letterSpacing: 0.8,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _TodayTopTile extends StatelessWidget {
+  const _TodayTopTile();
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return FutureBuilder<List<Map<String, dynamic>>>(
+      future: HighScoresService.instance.fetchTopScoreToday(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const _ScoreTileSkeleton(label: 'Today');
+        }
+        final data = snapshot.data ?? const [];
+        if (snapshot.hasError) {
+          return const _ScoreTileError(label: 'Today');
+        }
+        if (data.isEmpty) {
+          return _ScoreTile(
+            label: 'Today',
+            primaryText: 'Be the first to score 11+!',
+            secondaryText: null,
+            icon: Icons.wb_sunny,
+            accent: colorScheme.tertiary,
+          );
+        }
+        final row = data.first;
+        final username = (row['username'] as String?) ?? 'Anon';
+        final score = (row['score'] as int?) ?? 0;
+        return _ScoreTile(
+          label: 'Today',
+          primaryText: '$score points',
+          secondaryText: 'by $username',
+          icon: Icons.wb_sunny,
+          accent: colorScheme.primary,
+        );
+      },
+    );
+  }
+}
+
+class _MonthTopTile extends StatelessWidget {
+  const _MonthTopTile();
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return FutureBuilder<List<Map<String, dynamic>>>(
+      future: HighScoresService.instance.fetchTopScoreThisMonth(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const _ScoreTileSkeleton(label: 'This Month');
+        }
+        if (snapshot.hasError) {
+          return const _ScoreTileError(label: 'This Month');
+        }
+        final data = snapshot.data ?? const [];
+        if (data.isEmpty) {
+          return _ScoreTile(
+            label: 'This Month',
+            primaryText: 'No monthly scores yet',
+            secondaryText: null,
+            icon: Icons.calendar_today,
+            accent: colorScheme.secondary,
+          );
+        }
+        final top = data.first;
+        final username = (top['username'] as String?) ?? 'Anon';
+        final score = (top['score'] as int?) ?? 0;
+        return _ScoreTile(
+          label: 'This Month',
+          primaryText: '$score points',
+          secondaryText: 'by $username',
+          icon: Icons.calendar_today,
+          accent: colorScheme.secondary,
+        );
+      },
+    );
+  }
+}
+
+class _ScoreTile extends StatelessWidget {
+  final String label;
+  final String primaryText;
+  final String? secondaryText;
+  final IconData icon;
+  final Color accent;
+
+  const _ScoreTile({
+    required this.label,
+    required this.primaryText,
+    required this.secondaryText,
+    required this.icon,
+    required this.accent,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final screenWidth = MediaQuery.of(context).size.width;
+
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: screenWidth >= 600 ? 16 : 12,
+        vertical: 14,
+      ),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            accent.withValues(alpha: 0.12),
+            accent.withValues(alpha: 0.06),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: accent.withValues(alpha: 0.55), width: 1.2),
+        boxShadow: [
+          BoxShadow(
+            color: accent.withValues(alpha: 0.18),
+            blurRadius: 12,
+            spreadRadius: 0.5,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  accent.withValues(alpha: 0.22),
+                  accent.withValues(alpha: 0.10),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: accent.withValues(alpha: 0.45),
+                width: 1.0,
+              ),
+            ),
+            padding: const EdgeInsets.all(10),
+            child: Icon(icon, color: accent, size: 22),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label.toUpperCase(),
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: accent.withValues(alpha: 0.85),
+                    letterSpacing: 1.0,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  primaryText,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w800,
+                    color: colorScheme.onSurface.withValues(alpha: 0.95),
+                  ),
+                ),
+                if (secondaryText != null) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    secondaryText!,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: colorScheme.onSurface.withValues(alpha: 0.7),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ScoreTileSkeleton extends StatelessWidget {
+  final String label;
+  const _ScoreTileSkeleton({required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Opacity(
+      opacity: 0.7,
+      child: _ScoreTile(
+        label: label,
+        primaryText: 'Loading…',
+        secondaryText: null,
+        icon: Icons.hourglass_bottom,
+        accent: colorScheme.primary.withValues(alpha: 0.7),
+      ),
+    );
+  }
+}
+
+class _ScoreTileError extends StatelessWidget {
+  final String label;
+  const _ScoreTileError({required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return _ScoreTile(
+      label: label,
+      primaryText: 'Unable to load',
+      secondaryText: null,
+      icon: Icons.error_outline,
+      accent: colorScheme.error.withValues(alpha: 0.9),
     );
   }
 }

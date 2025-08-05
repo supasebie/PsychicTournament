@@ -1,112 +1,92 @@
-# Supabase Setup Guide
+# Supabase HighScores Setup
 
-This guide will help you set up Supabase authentication for the Psychic Tournament app.
+This document describes how to create and secure the remote `high_scores` table used for saving user scores (>= 11) separately from the local SQFLite database.
 
 ## Prerequisites
 
-1. A Supabase account (sign up at [supabase.com](https://supabase.com))
-2. Flutter development environment set up
+- Supabase project created
+- Supabase URL and anon key configured in [`lib/config/supabase_config.dart`](lib/config/supabase_config.dart:1)
+- Supabase Flutter initialized via [`lib/services/supabase_service.dart`](lib/services/supabase_service.dart:12)
 
-## Step 1: Create a Supabase Project
+## SQL Schema and Policies
 
-1. Go to [supabase.com](https://supabase.com) and sign in
-2. Click "New Project"
-3. Choose your organization
-4. Enter a project name (e.g., "psychic-tournament")
-5. Enter a database password (save this securely)
-6. Select a region close to your users
-7. Click "Create new project"
-
-## Step 2: Get Your Project Credentials
-
-1. In your Supabase dashboard, go to Settings > API
-2. Copy the following values:
-   - **Project URL** (looks like: `https://your-project-id.supabase.co`)
-   - **Anon public key** (starts with `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...`)
-
-## Step 3: Configure the App
-
-1. Open `lib/config/supabase_config.dart`
-2. Replace the placeholder values:
-   ```dart
-   static const String supabaseUrl = 'https://your-project-id.supabase.co';
-   static const String supabaseAnonKey = 'your-anon-key-here';
-   ```
-
-## Step 4: Set Up Authentication
-
-The app is already configured to use email/password authentication. No additional setup is required in Supabase for basic auth.
-
-### Optional: Email Templates
-
-To customize the email templates for password reset and email confirmation:
-
-1. Go to Authentication > Settings in your Supabase dashboard
-2. Scroll down to "Email Templates"
-3. Customize the templates as needed
-
-### Optional: Social Authentication
-
-To add social login providers (Google, GitHub, etc.):
-
-1. Go to Authentication > Settings in your Supabase dashboard
-2. Scroll down to "Auth Providers"
-3. Enable and configure the providers you want to use
-4. Update the app code to include social login buttons
-
-## Step 5: Test the Integration
-
-1. Run `flutter pub get` to install dependencies
-2. Run the app with `flutter run`
-3. Try creating a new account and signing in
-4. Check the Authentication > Users section in your Supabase dashboard to see registered users
-
-## Database Schema (Optional)
-
-If you want to store user scores and game history, you can create additional tables:
+Run the following SQL in the Supabase SQL editor:
 
 ```sql
--- Create a profiles table
-create table profiles (
-  id uuid references auth.users on delete cascade,
-  display_name text,
-  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
-  primary key (id)
+BEGIN;
+
+create table if not exists public.high_scores (
+  id uuid primary key default gen_random_uuid(),
+  username text not null,
+  score int4 not null,
+  recorded_at timestamptz not null default now(),
+  constraint high_scores_score_min check (score >= 11)
 );
 
--- Create a game_scores table
-create table game_scores (
-  id uuid default gen_random_uuid() primary key,
-  user_id uuid references auth.users on delete cascade,
-  score integer not null,
-  total_cards integer not null default 25,
-  game_type text not null default 'zener',
-  created_at timestamp with time zone default timezone('utc'::text, now()) not null
-);
+-- Helpful indexes for leaderboard queries
+create index if not exists idx_high_scores_score_desc on public.high_scores (score desc, recorded_at desc);
+create index if not exists idx_high_scores_username on public.high_scores (username);
 
--- Enable Row Level Security
-alter table profiles enable row level security;
-alter table game_scores enable row level security;
+-- Enable RLS
+alter table public.high_scores enable row level security;
 
--- Create policies
-create policy "Users can view own profile" on profiles for select using (auth.uid() = id);
-create policy "Users can update own profile" on profiles for update using (auth.uid() = id);
-create policy "Users can insert own profile" on profiles for insert with check (auth.uid() = id);
+-- Read policy: allow anyone to read (public leaderboard)
+do $$
+begin
+  if not exists (
+    select 1 from pg_policies where schemaname = 'public' and tablename = 'high_scores' and policyname = 'Allow read to all'
+  ) then
+    create policy "Allow read to all"
+      on public.high_scores
+      for select
+      using (true);
+  end if;
+end$$;
 
-create policy "Users can view own scores" on game_scores for select using (auth.uid() = user_id);
-create policy "Users can insert own scores" on game_scores for insert with check (auth.uid() = user_id);
+-- Insert policy: allow anyone to insert with score >= 11
+do $$
+begin
+  if not exists (
+    select 1 from pg_policies where schemaname = 'public' and tablename = 'high_scores' and policyname = 'Allow insert to all with score >= 11'
+  ) then
+    create policy "Allow insert to all with score >= 11"
+      on public.high_scores
+      for insert
+      with check (score >= 11);
+  end if;
+end$$;
+
+-- No update/delete policies => effectively denied
+COMMIT;
 ```
 
-## Troubleshooting
+## Username Rules
 
-### Common Issues
+- If a user is authenticated through Supabase, we read `user.userMetadata['display_name']`.
+- If not authenticated or no display name is present, we save as `"Anon"`.
 
-1. **"Invalid API key" error**: Double-check that you copied the anon key correctly
-2. **"Invalid URL" error**: Make sure the URL includes `https://` and ends with `.supabase.co`
-3. **Email not sending**: Check your email provider settings in Supabase dashboard
+## App Integration
 
-### Getting Help
+Code insertion points:
 
-- [Supabase Documentation](https://supabase.com/docs)
-- [Flutter Supabase Package](https://pub.dev/packages/supabase_flutter)
-- [Supabase Community Discord](https://discord.supabase.com)
+- Insert service: [`lib/services/high_scores_service.dart`](lib/services/high_scores_service.dart:1)
+- Triggered automatically from results screen: [`lib/screens/results_review_screen.dart`](lib/screens/results_review_screen.dart:48)
+
+Behavior:
+
+- On game completion, if `finalScore >= 11`, a non-blocking call inserts `{ username, score, recorded_at }` to `public.high_scores`.
+- Failures are silent and logged in debug builds.
+
+## Optional Queries Implemented
+
+Provided by [`HighScoresService.fetchTopScoreToday()`](lib/services/high_scores_service.dart:118) and [`HighScoresService.fetchTopScoreThisMonth()`](lib/services/high_scores_service.dart:146):
+
+- fetchTopScoreToday: the single highest score recorded since UTC start-of-day
+- fetchTopScoreThisMonth: the top 3 scores recorded since UTC start-of-month
+
+Note on time zones: All comparisons use UTC boundaries to match the `timestamptz` semantics and server defaults.
+
+## Validation
+
+- Try a test insert from your app with a score of 11+ and confirm it appears in the public table editor.
+- Verify that scores < 11 are rejected by DB due to the CHECK and RLS policies.

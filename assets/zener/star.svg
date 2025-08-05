@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
+  <g fill="none" stroke="#000" stroke-width="16" stroke-linecap="round" stroke-linejoin="round">
+    <!-- 5-point star centered at (128,128) with outer radius 88 and inner radius 36 -->
+    <path d="M128 40
+             L149.2 98.2
+             L210.9 98.9
+             L161.5 134.7
+             L179.9 193.1
+             L128 158
+             L76.1 193.1
+             L94.5 134.7
+             L45.1 98.9
+             L106.8 98.2
+             Z"/>
+  </g>
+</svg>
