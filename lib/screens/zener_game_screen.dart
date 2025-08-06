@@ -293,7 +293,7 @@ class _ZenerGameScreenState extends State<ZenerGameScreen> {
       // Phase 2: Start hiding card (smooth transition)
 
       // Phase 3: Hide card after brief delay for smooth animation
-      Timer(const Duration(milliseconds: 200), () {
+      Timer(const Duration(milliseconds: 100), () {
         if (mounted) {
           try {
             setState(() {
@@ -307,7 +307,7 @@ class _ZenerGameScreenState extends State<ZenerGameScreen> {
       });
 
       // Phase 4: Re-enable buttons after card is hidden (requirement 6.4)
-      Timer(const Duration(milliseconds: 500), () {
+      Timer(const Duration(milliseconds: 200), () {
         if (mounted) {
           try {
             setState(() {
@@ -342,7 +342,7 @@ class _ZenerGameScreenState extends State<ZenerGameScreen> {
   void _handleGameCompletion() {
     try {
       // Short delay for UX polish
-      Timer(const Duration(milliseconds: 2500), () async {
+      Timer(const Duration(milliseconds: 1500), () async {
         if (!mounted) return;
         try {
           await _maybeShowPostSessionInterstitial();
