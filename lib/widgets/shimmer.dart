@@ -9,14 +9,18 @@ class PurpleGlowShimmer extends StatefulWidget {
   final Duration period;
   final double angle; // in radians
   final double highlightWidth; // fraction of child width, 0-1
+  // Portion of the cycle spent idle (no sweep). 0.0..0.9 recommended.
+  final double idleFraction;
 
   const PurpleGlowShimmer({
     super.key,
     required this.child,
     this.enabled = true,
-    this.period = const Duration(milliseconds: 2600),
+    // Much slower default period for a more relaxed, infrequent sweep
+    this.period = const Duration(milliseconds: 13000),
     this.angle = 0.6,
     this.highlightWidth = 0.28,
+    this.idleFraction = 0.8,
   });
 
   @override
@@ -78,7 +82,8 @@ class _PurpleGlowShimmerState extends State<PurpleGlowShimmer>
           AnimatedBuilder(
             animation: _controller,
             builder: (context, _) {
-              final t = _controller.value;
+              final tRaw = _controller.value;
+              final t = _withIdle(tRaw, widget.idleFraction);
               // Pulse the glow slightly for life
               final glowStrength = 0.25 + 0.15 * _easeInOutSine(t);
               return IgnorePointer(
@@ -111,7 +116,8 @@ class _PurpleGlowShimmerState extends State<PurpleGlowShimmer>
                   final width = bounds.width;
                   final height = bounds.height;
 
-                  final t = _controller.value; // 0..1
+                  final tRaw = _controller.value; // 0..1
+                  final t = _easeInOutSine(_withIdle(tRaw, widget.idleFraction));
                   final dx = width * (t * 2 - 1); // -w .. +w sweep
 
                   final angle = widget.angle;
@@ -181,16 +187,20 @@ class Shimmer extends StatefulWidget {
   final double highlightWidth; // fraction of child width, 0-1
   final double baseOpacity;
   final double highlightOpacity;
+  // Portion of the cycle spent idle (no sweep). 0.0..0.9 recommended.
+  final double idleFraction;
 
   const Shimmer({
     super.key,
     required this.child,
     this.enabled = true,
-    this.period = const Duration(milliseconds: 2400),
+    // Much slower default period for a more relaxed, infrequent sweep
+    this.period = const Duration(milliseconds: 12000),
     this.angle = 0.6, // slight diagonal
     this.highlightWidth = 0.25,
     this.baseOpacity = 0.15,
     this.highlightOpacity = 0.65,
+    this.idleFraction = 0.8,
   });
 
   @override
@@ -251,7 +261,8 @@ class _ShimmerState extends State<Shimmer> with SingleTickerProviderStateMixin {
               final width = bounds.width;
 
               // Compute translation along the orthogonal axis to sweep across
-              final t = _controller.value; // 0..1
+              final tRaw = _controller.value; // 0..1
+              final t = _easeInOutSine(_withIdle(tRaw, widget.idleFraction));
               final dx = width * (t * 2 - 1); // -w .. +w sweep
 
               final angle = widget.angle;
@@ -303,6 +314,22 @@ class _ShimmerState extends State<Shimmer> with SingleTickerProviderStateMixin {
       ),
     );
   }
+}
+
+// Easing util available to all shimmer types
+double _easeInOutSine(double t) => -0.5 * (dm.cos(dm.pi * t) - 1.0);
+
+// Map controller progress into a value with an idle region at both ends.
+// idleFraction indicates how much of the full cycle time is spent idle across both ends.
+// For example, idleFraction 0.6 means 30% idle at start and 30% idle at end, 40% active.
+// Returns 0..1 progression only during the active middle window.
+double _withIdle(double t, double idleFraction) {
+  final f = idleFraction.clamp(0.0, 0.9);
+  final edge = f / 2.0;
+  if (t <= edge) return 0.0;
+  if (t >= 1.0 - edge) return 1.0;
+  final u = (t - edge) / (1.0 - f); // normalize to 0..1
+  return u;
 }
 
 /// Avoid importing dart:math publicly; tiny wrappers reduce import churn here.
