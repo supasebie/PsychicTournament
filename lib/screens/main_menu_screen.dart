@@ -152,10 +152,8 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
                     children: [
                       // Header Section → Glass panel (no Expanded inside scroll)
                       Padding(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: _getResponsiveHorizontalPadding(
-                            MediaQuery.of(context).size.width,
-                          ),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 32.0,
                           vertical: 16.0,
                         ),
                         child: GlassContainer(
@@ -178,25 +176,23 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
                               // App Title
                               Text(
                                 'Psychic Tournament',
-                                style: _getResponsiveTitleStyle(
-                                  context,
-                                  theme,
-                                  colorScheme,
+                                style: theme.textTheme.displaySmall?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: colorScheme.primary,
+                                  letterSpacing: 1.2,
                                 ),
                                 textAlign: TextAlign.center,
                               ),
-                              SizedBox(
-                                height: _getResponsiveTitleSpacing(
-                                  MediaQuery.of(context).size.width,
-                                ),
-                              ),
+                              const SizedBox(height: 16),
                               // Subtitle
                               Text(
                                 'Test Your Psychic Abilities',
-                                style: _getResponsiveSubtitleStyle(
-                                  context,
-                                  theme,
-                                  colorScheme,
+                                style: theme.textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.w300,
+                                  color: colorScheme.onSurface.withValues(
+                                    alpha: 0.8,
+                                  ),
+                                  letterSpacing: 0.5,
                                 ),
                                 textAlign: TextAlign.center,
                               ),
@@ -220,21 +216,13 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
                         ),
                       ),
                       // Scoreboards Section
-                      Padding(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: _getResponsiveHorizontalPadding(
-                            MediaQuery.of(context).size.width,
-                          ),
-                        ),
-                        child: const _ScoreboardsCard(),
+                      const Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 32.0),
+                        child: _ScoreboardsCard(),
                       ),
                       // Navigation Section - intrinsic height inside scroll view
                       Padding(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: _getResponsiveHorizontalPadding(
-                            MediaQuery.of(context).size.width,
-                          ),
-                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 32.0),
                         child: GlassContainer(
                           padding: const EdgeInsets.all(20),
                           borderRadius: 20,
@@ -249,40 +237,36 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
                         ),
                       ),
                       // Footer text (chip) - intrinsic height
-                      Padding(
-                        padding: EdgeInsets.all(
-                          _getResponsiveFooterPadding(
-                            MediaQuery.of(context).size.width,
-                          ),
-                        ),
-                        child: Align(
-                          alignment: Alignment.bottomCenter,
-                          child: GlassContainer(
-                            padding: const EdgeInsets.symmetric(
-                              vertical: 12,
-                              horizontal: 18,
-                            ),
-                            borderRadius: 14,
-                            tintOpacity: 0.6,
-                            borderGradient: LinearGradient(
-                              colors: [
-                                colorScheme.secondary.withValues(alpha: 0.8),
-                                colorScheme.primary.withValues(alpha: 0.8),
-                              ],
-                            ),
-                            borderWidth: 1.2,
-                            child: Text(
-                              'Explore the mysteries of the mind',
-                              style: _getResponsiveFooterTextStyle(
-                                context,
-                                theme,
-                                colorScheme,
-                              )?.copyWith(letterSpacing: 0.4),
-                              textAlign: TextAlign.center,
-                            ),
-                          ),
-                        ),
-                      ),
+                      // Padding(
+                      //   padding: const EdgeInsets.all(24.0),
+                      //   child: Align(
+                      //     alignment: Alignment.bottomCenter,
+                      //     child: GlassContainer(
+                      //       padding: const EdgeInsets.symmetric(
+                      //         vertical: 12,
+                      //         horizontal: 18,
+                      //       ),
+                      //       borderRadius: 14,
+                      //       tintOpacity: 0.6,
+                      //       borderGradient: LinearGradient(
+                      //         colors: [
+                      //           colorScheme.secondary.withValues(alpha: 0.8),
+                      //           colorScheme.primary.withValues(alpha: 0.8),
+                      //         ],
+                      //       ),
+                      //       borderWidth: 1.2,
+                      //       child: Text(
+                      //         'Explore the mysteries of the mind',
+                      //         style: theme.textTheme.bodySmall?.copyWith(
+                      //           color: colorScheme.onSurface.withValues(alpha: 0.6),
+                      //           fontStyle: FontStyle.italic,
+                      //           letterSpacing: 0.4,
+                      //         ),
+                      //         textAlign: TextAlign.center,
+                      //       ),
+                      //     ),
+                      //   ),
+                      // ),
                     ],
                   ),
                 ),
@@ -315,32 +299,6 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
   }
 
   Widget _buildResponsiveNavigationSection(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final screenWidth = MediaQuery.of(context).size.width;
-        final screenHeight = MediaQuery.of(context).size.height;
-        final isTabletOrDesktop = screenWidth >= 600;
-        final isLandscape = screenWidth > screenHeight;
-
-        // Determine layout based on screen size and orientation
-        final useHorizontalLayout =
-            isTabletOrDesktop || (isLandscape && screenWidth >= 800);
-
-        // Calculate responsive padding
-        final horizontalPadding = _getResponsiveHorizontalPadding(screenWidth);
-        final buttonSpacing = _getResponsiveButtonSpacing(screenWidth);
-
-        return Padding(
-          padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
-          child: useHorizontalLayout
-              ? _buildHorizontalButtonLayout(context, buttonSpacing)
-              : _buildVerticalButtonLayout(context, buttonSpacing),
-        );
-      },
-    );
-  }
-
-  Widget _buildVerticalButtonLayout(BuildContext context, double spacing) {
     final isSignedIn = SupabaseService.isSignedIn;
     final userDisplayName = SupabaseService.userDisplayName;
 
@@ -355,7 +313,7 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
           subtitle: 'Test ESP with classic cards',
           onPressed: () => _navigateToZenerGame(context),
         ),
-        SizedBox(height: spacing),
+        const SizedBox(height: 24),
 
         // My Games Menu Button (opens sub-menu with History & Statistics)
         _buildSecondaryButton(
@@ -367,7 +325,7 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
             Navigator.pushNamed(context, '/stats-menu');
           },
         ),
-        SizedBox(height: spacing),
+        const SizedBox(height: 24),
 
         // Authentication Button (Secondary)
         if (isSignedIn)
@@ -390,224 +348,6 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
     );
   }
 
-  Widget _buildHorizontalButtonLayout(BuildContext context, double spacing) {
-    final isSignedIn = SupabaseService.isSignedIn;
-    final userDisplayName = SupabaseService.userDisplayName;
-
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        // Zener Cards Button (Primary)
-        Expanded(
-          child: _buildPrimaryButton(
-            context: context,
-            icon: Icons.style,
-            title: 'Zener Cards',
-            subtitle: 'Test ESP with classic cards',
-            onPressed: () => _navigateToZenerGame(context),
-          ),
-        ),
-        SizedBox(width: spacing),
-
-        // Performance Menu Button (opens sub-menu with History & Statistics)
-        Expanded(
-          child: _buildSecondaryButton(
-            context: context,
-            icon: Icons.insights,
-            title: 'Performance',
-            subtitle: 'History and Statistics',
-            onPressed: () {
-              Navigator.pushNamed(context, '/stats-menu');
-            },
-          ),
-        ),
-        SizedBox(width: spacing),
-
-        // Authentication Button (Secondary)
-        Expanded(
-          child: isSignedIn
-              ? _buildSecondaryButton(
-                  context: context,
-                  icon: Icons.person,
-                  title: userDisplayName ?? 'User',
-                  subtitle: 'Tap to sign out',
-                  onPressed: () => _handleSignOut(context),
-                )
-              : _buildSecondaryButton(
-                  context: context,
-                  icon: Icons.login,
-                  title: 'Sign In',
-                  subtitle: 'Save your scores',
-                  onPressed: () => _navigateToAuth(context),
-                ),
-        ),
-      ],
-    );
-  }
-
-  double _getResponsiveHorizontalPadding(double screenWidth) {
-    if (screenWidth >= 1200) {
-      return screenWidth * 0.2; // 20% padding on very large screens
-    } else if (screenWidth >= 800) {
-      return screenWidth * 0.15; // 15% padding on large screens
-    } else if (screenWidth >= 600) {
-      return 48.0; // Fixed padding for tablets
-    } else {
-      return 32.0; // Standard mobile padding
-    }
-  }
-
-  double _getResponsiveButtonSpacing(double screenWidth) {
-    if (screenWidth >= 800) {
-      return 32.0; // Larger spacing for bigger screens
-    } else if (screenWidth >= 600) {
-      return 28.0; // Medium spacing for tablets
-    } else {
-      return 24.0; // Standard mobile spacing
-    }
-  }
-
-  double _getResponsiveButtonHeight(double screenWidth) {
-    if (screenWidth >= 800) {
-      return 95.0; // Taller buttons for larger screens
-    } else if (screenWidth >= 600) {
-      return 90.0; // Medium height for tablets
-    } else {
-      return 85.0; // Increased height for mobile to prevent overflow
-    }
-  }
-
-  double _getResponsiveButtonPadding(double screenWidth) {
-    if (screenWidth >= 800) {
-      return 32.0; // More padding for larger screens
-    } else if (screenWidth >= 600) {
-      return 28.0; // Medium padding for tablets
-    } else {
-      return 24.0; // Standard mobile padding
-    }
-  }
-
-  double _getResponsiveIconSize(double screenWidth) {
-    if (screenWidth >= 800) {
-      return 32.0; // Larger icons for bigger screens
-    } else if (screenWidth >= 600) {
-      return 30.0; // Medium icons for tablets
-    } else {
-      return 28.0; // Standard mobile icons
-    }
-  }
-
-  double _getResponsiveIconSpacing(double screenWidth) {
-    if (screenWidth >= 800) {
-      return 24.0; // More spacing for larger screens
-    } else if (screenWidth >= 600) {
-      return 22.0; // Medium spacing for tablets
-    } else {
-      return 20.0; // Standard mobile spacing
-    }
-  }
-
-  TextStyle? _getResponsiveTitleStyle(
-    BuildContext context,
-    ThemeData theme,
-    ColorScheme colorScheme,
-  ) {
-    final screenWidth = MediaQuery.of(context).size.width;
-
-    if (screenWidth >= 800) {
-      return theme.textTheme.displayLarge?.copyWith(
-        fontWeight: FontWeight.bold,
-        color: colorScheme.primary,
-        letterSpacing: 1.2,
-      );
-    } else if (screenWidth >= 600) {
-      return theme.textTheme.displayMedium?.copyWith(
-        fontWeight: FontWeight.bold,
-        color: colorScheme.primary,
-        letterSpacing: 1.2,
-      );
-    } else {
-      return theme.textTheme.displaySmall?.copyWith(
-        fontWeight: FontWeight.bold,
-        color: colorScheme.primary,
-        letterSpacing: 1.2,
-      );
-    }
-  }
-
-  TextStyle? _getResponsiveSubtitleStyle(
-    BuildContext context,
-    ThemeData theme,
-    ColorScheme colorScheme,
-  ) {
-    final screenWidth = MediaQuery.of(context).size.width;
-
-    if (screenWidth >= 800) {
-      return theme.textTheme.headlineSmall?.copyWith(
-        fontWeight: FontWeight.w300,
-        color: colorScheme.onSurface.withValues(alpha: 0.8),
-        letterSpacing: 0.5,
-      );
-    } else if (screenWidth >= 600) {
-      return theme.textTheme.titleLarge?.copyWith(
-        fontWeight: FontWeight.w300,
-        color: colorScheme.onSurface.withValues(alpha: 0.8),
-        letterSpacing: 0.5,
-      );
-    } else {
-      return theme.textTheme.titleMedium?.copyWith(
-        fontWeight: FontWeight.w300,
-        color: colorScheme.onSurface.withValues(alpha: 0.8),
-        letterSpacing: 0.5,
-      );
-    }
-  }
-
-  double _getResponsiveTitleSpacing(double screenWidth) {
-    if (screenWidth >= 800) {
-      return 20.0; // More spacing for larger screens
-    } else if (screenWidth >= 600) {
-      return 18.0; // Medium spacing for tablets
-    } else {
-      return 16.0; // Standard mobile spacing
-    }
-  }
-
-  double _getResponsiveFooterPadding(double screenWidth) {
-    if (screenWidth >= 800) {
-      return 32.0; // More padding for larger screens
-    } else if (screenWidth >= 600) {
-      return 28.0; // Medium padding for tablets
-    } else {
-      return 24.0; // Standard mobile padding
-    }
-  }
-
-  TextStyle? _getResponsiveFooterTextStyle(
-    BuildContext context,
-    ThemeData theme,
-    ColorScheme colorScheme,
-  ) {
-    final screenWidth = MediaQuery.of(context).size.width;
-
-    if (screenWidth >= 800) {
-      return theme.textTheme.bodyLarge?.copyWith(
-        color: colorScheme.onSurface.withValues(alpha: 0.6),
-        fontStyle: FontStyle.italic,
-      );
-    } else if (screenWidth >= 600) {
-      return theme.textTheme.bodyMedium?.copyWith(
-        color: colorScheme.onSurface.withValues(alpha: 0.6),
-        fontStyle: FontStyle.italic,
-      );
-    } else {
-      return theme.textTheme.bodySmall?.copyWith(
-        color: colorScheme.onSurface.withValues(alpha: 0.6),
-        fontStyle: FontStyle.italic,
-      );
-    }
-  }
-
   Widget _buildPrimaryButton({
     required BuildContext context,
     required IconData icon,
@@ -617,12 +357,10 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
   }) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final screenWidth = MediaQuery.of(context).size.width;
-    final buttonHeight = _getResponsiveButtonHeight(screenWidth);
 
     // Prevent text overflow by allowing subtitle to wrap and using flexible layout.
     return ConstrainedBox(
-      constraints: BoxConstraints(minHeight: buttonHeight),
+      constraints: const BoxConstraints(minHeight: 85),
       child: Semantics(
         label: '$title - $subtitle',
         button: true,
@@ -637,10 +375,7 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(16),
             ),
-            padding: EdgeInsets.symmetric(
-              horizontal: _getResponsiveButtonPadding(screenWidth),
-              vertical: 12,
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
           ),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.center,
@@ -651,13 +386,9 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
                   color: colorScheme.onPrimary.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Icon(
-                  icon,
-                  size: _getResponsiveIconSize(screenWidth),
-                  color: colorScheme.onPrimary,
-                ),
+                child: Icon(icon, size: 28, color: colorScheme.onPrimary),
               ),
-              SizedBox(width: _getResponsiveIconSpacing(screenWidth)),
+              const SizedBox(width: 20),
               // Let the text wrap and avoid overflow
               Expanded(
                 child: Column(
@@ -709,12 +440,10 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
   }) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final screenWidth = MediaQuery.of(context).size.width;
-    final buttonHeight = _getResponsiveButtonHeight(screenWidth);
 
     // Prevent overflow in secondary buttons as well.
     return ConstrainedBox(
-      constraints: BoxConstraints(minHeight: buttonHeight),
+      constraints: const BoxConstraints(minHeight: 85),
       child: Semantics(
         label: '$title - $subtitle',
         button: true,
@@ -731,10 +460,7 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(16),
             ),
-            padding: EdgeInsets.symmetric(
-              horizontal: _getResponsiveButtonPadding(screenWidth),
-              vertical: 12,
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
           ),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.center,
@@ -747,11 +473,11 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
                 ),
                 child: Icon(
                   icon,
-                  size: _getResponsiveIconSize(screenWidth),
+                  size: 28,
                   color: colorScheme.onSurface.withValues(alpha: 0.65),
                 ),
               ),
-              SizedBox(width: _getResponsiveIconSpacing(screenWidth)),
+              const SizedBox(width: 20),
               Expanded(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
