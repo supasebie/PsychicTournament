@@ -947,7 +947,7 @@ class _TodayTopTile extends StatelessWidget {
         if (data.isEmpty) {
           return _ScoreTile(
             label: 'Today',
-            primaryText: 'Be the first to score 11+!',
+            primaryText: 'Be the first to score over 10',
             secondaryText: null,
             icon: Icons.wb_sunny,
             accent: colorScheme.tertiary,

@@ -416,6 +416,70 @@ class GameDatabaseService {
     }
   }
 
+  /// Get paginated game sessions ordered by date (most recent first)
+  /// [limit] - Number of sessions to retrieve (default: 8)
+  /// [offset] - Number of sessions to skip (for pagination)
+  /// [includeTurnResults] - Whether to include turn results for each session
+  Future<List<GameSession>> getGameSessionsPaginated({
+    int limit = 8,
+    int offset = 0,
+    bool includeTurnResults = false,
+  }) async {
+    try {
+      final db = await database;
+
+      // Query game sessions with pagination
+      final sessionMaps = await db.query(
+        DatabaseConstants.gameSessionsTable,
+        orderBy: '${DatabaseConstants.gameSessionDateTime} DESC',
+        limit: limit,
+        offset: offset,
+      );
+
+      final sessions = <GameSession>[];
+
+      for (final sessionMap in sessionMaps) {
+        final session = GameSession.fromMap(sessionMap);
+
+        if (includeTurnResults && session.id != null) {
+          // Load turn results for this session
+          final turnResults = await _getTurnResultsForSession(session.id!);
+          sessions.add(session.copyWith(turnResults: turnResults));
+        } else {
+          sessions.add(session);
+        }
+      }
+
+      return sessions;
+    } catch (e) {
+      if (e is db_exceptions.DatabaseException) rethrow;
+      throw db_exceptions.DatabaseException(
+        'Failed to retrieve paginated game sessions',
+        operation: 'getGameSessionsPaginated',
+        originalError: e,
+      );
+    }
+  }
+
+  /// Get the total count of game sessions in the database
+  /// Useful for pagination controls
+  Future<int> getTotalGameSessionsCount() async {
+    try {
+      final db = await database;
+      final result = await db.rawQuery(
+        'SELECT COUNT(*) as count FROM ${DatabaseConstants.gameSessionsTable}',
+      );
+      return result.first['count'] as int? ?? 0;
+    } catch (e) {
+      if (e is db_exceptions.DatabaseException) rethrow;
+      throw db_exceptions.DatabaseException(
+        'Failed to get total game sessions count',
+        operation: 'getTotalGameSessionsCount',
+        originalError: e,
+      );
+    }
+  }
+
   /// Helper method to get turn results for a specific session
   Future<List<TurnResult>> _getTurnResultsForSession(int sessionId) async {
     final db = await database;

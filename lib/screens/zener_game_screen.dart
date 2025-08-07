@@ -636,7 +636,7 @@ class _ZenerGameScreenState extends State<ZenerGameScreen> {
                     value: _debugMode,
                     onChanged: (_) => _toggleDebugMode(),
                     materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    activeThumbColor: Colors.red.shade700,
+                    // activeThumbColor: Colors.red.shade700,
                   ),
                 ),
               ],
