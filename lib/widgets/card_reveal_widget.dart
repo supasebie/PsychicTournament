@@ -120,8 +120,8 @@ class _CardRevealWidgetState extends State<CardRevealWidget>
             ..setEntry(3, 2, 0.001) // perspective
             ..rotateY(angle),
           child: Container(
-            width: 264.0, // 240 * 1.10
-            height: 352.0, // 320 * 1.10
+            width: 290.0,
+            height: 400.0,
             decoration: BoxDecoration(
               // Glass-like base to match the new style system
               color: cs.surface.withValues(alpha: 0.8),
@@ -201,8 +201,8 @@ class _CardRevealWidgetState extends State<CardRevealWidget>
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Container(
-                    width: 189.2, // 172 * 1.10
-                    height: 189.2, // 172 * 1.10
+                    width: 250,
+                    height: 250,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       boxShadow: [
@@ -215,7 +215,7 @@ class _CardRevealWidgetState extends State<CardRevealWidget>
                     ),
                     child: SvgSymbol(
                       assetPath: symbol.assetPath,
-                      size: 178.2, // 162 * 1.10
+                      size: 178,
                       semanticLabel: symbol.displayName,
                     ),
                   ),

@@ -634,16 +634,27 @@ class _ScoreSectionHeader extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, color: effectiveColor, size: 20),
-              const SizedBox(width: 8),
-              Text(
-                title,
-                textAlign: TextAlign.center,
-                style: theme.textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.w900,
-                  color: effectiveColor,
-                  letterSpacing: 0.8,
+              // Trophy icon in gold with a subtle glow
+              Container(
+                decoration: BoxDecoration(
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFFFFD700).withValues(alpha: 0.45),
+                      blurRadius: 10,
+                      spreadRadius: 1,
+                    ),
+                  ],
                 ),
+                child: const Icon(
+                  Icons.emoji_events,
+                  color: Color(0xFFFFD700), // gold
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 8),
+              // Glowing, animated purple text (non-gradient, alternating hues)
+              _FirePurpleGlowText(
+                title: title,
               ),
             ],
           ),
@@ -874,6 +885,67 @@ class _ScoreTileError extends StatelessWidget {
       secondaryText: null,
       icon: Icons.error_outline,
       accent: colorScheme.error.withValues(alpha: 0.9),
+    );
+  }
+}
+
+/// Animated glowing text that alternates between two purple hues (no gradients).
+class _FirePurpleGlowText extends StatefulWidget {
+  final String title;
+  final Duration duration;
+  const _FirePurpleGlowText({required this.title, this.duration = const Duration(seconds: 2)});
+
+  @override
+  State<_FirePurpleGlowText> createState() => _FirePurpleGlowTextState();
+}
+
+class _FirePurpleGlowTextState extends State<_FirePurpleGlowText> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+
+  // Two rich purple hues to alternate between
+  static const Color _purpleA = Color(0xFFB388FF); // light vibrant purple
+  static const Color _purpleB = Color(0xFF7C4DFF); // deeper purple
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(vsync: this, duration: widget.duration)..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, _) {
+        // Create a smooth ping-pong between the two colors
+        final t = _controller.value;
+        final color = Color.lerp(_purpleA, _purpleB, t) ?? _purpleA;
+
+        // Strong outer glow using multiple shadows with increasing blur
+        final shadows = [
+          Shadow(color: color.withValues(alpha: 0.6), blurRadius: 6, offset: const Offset(0, 0)),
+          Shadow(color: color.withValues(alpha: 0.45), blurRadius: 12, offset: const Offset(0, 0)),
+          Shadow(color: color.withValues(alpha: 0.25), blurRadius: 20, offset: const Offset(0, 0)),
+        ];
+
+        return Text(
+          widget.title,
+          textAlign: TextAlign.center,
+          style: theme.textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.w900,
+            color: color,
+            letterSpacing: 0.8,
+            shadows: shadows,
+          ),
+        );
+      },
     );
   }
 }

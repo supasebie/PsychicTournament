@@ -117,7 +117,9 @@ class _PurpleGlowShimmerState extends State<PurpleGlowShimmer>
                   final height = bounds.height;
 
                   final tRaw = _controller.value; // 0..1
-                  final t = _easeInOutSine(_withIdle(tRaw, widget.idleFraction));
+                  final t = _easeInOutSine(
+                    _withIdle(tRaw, widget.idleFraction),
+                  );
                   final dx = width * (t * 2 - 1); // -w .. +w sweep
 
                   final angle = widget.angle;

@@ -626,50 +626,50 @@ class _ZenerGameScreenState extends State<ZenerGameScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: AnimatedDefaultTextStyle(
-          duration: const Duration(milliseconds: 300),
-          style: const TextStyle(fontWeight: FontWeight.bold),
-          child: const Text('Psychic Tournament'),
-        ),
-        backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-        foregroundColor: Theme.of(context).colorScheme.onPrimaryContainer,
-        elevation: 0,
-        centerTitle: true,
-        actions: [
-          // Debug mode toggle with animation
-          Padding(
-            padding: const EdgeInsets.only(right: 8.0),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  child: Icon(
-                    Icons.bug_report,
-                    size: 16,
-                    color: _debugMode
-                        ? Colors.red.shade700
-                        : Theme.of(context).colorScheme.onPrimaryContainer
-                              .withValues(alpha: 0.6),
-                  ),
-                ),
-                const SizedBox(width: 4),
-                AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 200),
-                  child: Switch(
-                    key: ValueKey(_debugMode),
-                    value: _debugMode,
-                    onChanged: (_) => _toggleDebugMode(),
-                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    // activeThumbColor: Colors.red.shade700,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
+      // appBar: AppBar(
+      //   title: AnimatedDefaultTextStyle(
+      //     duration: const Duration(milliseconds: 300),
+      //     style: const TextStyle(fontWeight: FontWeight.bold),
+      //     child: const Text('Psychic Tournament'),
+      //   ),
+      //   backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+      //   foregroundColor: Theme.of(context).colorScheme.onPrimaryContainer,
+      //   elevation: 0,
+      //   centerTitle: true,
+      //   actions: [
+      //     // Debug mode toggle with animation
+      //     Padding(
+      //       padding: const EdgeInsets.only(right: 8.0),
+      //       child: Row(
+      //         mainAxisSize: MainAxisSize.min,
+      //         children: [
+      //           AnimatedContainer(
+      //             duration: const Duration(milliseconds: 200),
+      //             child: Icon(
+      //               Icons.bug_report,
+      //               size: 16,
+      //               color: _debugMode
+      //                   ? Colors.red.shade700
+      //                   : Theme.of(context).colorScheme.onPrimaryContainer
+      //                         .withValues(alpha: 0.6),
+      //             ),
+      //           ),
+      //           const SizedBox(width: 4),
+      //           AnimatedSwitcher(
+      //             duration: const Duration(milliseconds: 200),
+      //             child: Switch(
+      //               key: ValueKey(_debugMode),
+      //               value: _debugMode,
+      //               onChanged: (_) => _toggleDebugMode(),
+      //               materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      //               // activeThumbColor: Colors.red.shade700,
+      //             ),
+      //           ),
+      //         ],
+      //       ),
+      //     ),
+      //   ],
+      // ),
       body: AnimatedGradientBackground(
         child: SafeArea(
           child: Stack(
@@ -677,12 +677,13 @@ class _ZenerGameScreenState extends State<ZenerGameScreen> {
               // Main game content
               Padding(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 22.0,
+                  horizontal: 16.0,
                   vertical: 4.0,
                 ),
                 child: Column(
                   mainAxisSize: MainAxisSize.max,
                   children: [
+                    Padding(padding: const EdgeInsets.fromLTRB(0, 0, 0, 20)),
                     // Game info section with animations
                     AnimatedContainer(
                       duration: const Duration(milliseconds: 300),
