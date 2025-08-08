@@ -653,9 +653,7 @@ class _ScoreSectionHeader extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               // Glowing, animated purple text (non-gradient, alternating hues)
-              _FirePurpleGlowText(
-                title: title,
-              ),
+              _FirePurpleGlowText(title: title),
             ],
           ),
         ),
@@ -817,7 +815,7 @@ class _ScoreTile extends StatelessWidget {
                 Text(
                   label.toUpperCase(),
                   style: theme.textTheme.labelSmall?.copyWith(
-                    color: accent.withValues(alpha: 0.85),
+                    color: const Color(0xFFFFD700), // gold
                     letterSpacing: 1.0,
                     fontWeight: FontWeight.w700,
                   ),
@@ -893,13 +891,17 @@ class _ScoreTileError extends StatelessWidget {
 class _FirePurpleGlowText extends StatefulWidget {
   final String title;
   final Duration duration;
-  const _FirePurpleGlowText({required this.title, this.duration = const Duration(seconds: 2)});
+  const _FirePurpleGlowText({
+    required this.title,
+    this.duration = const Duration(seconds: 2),
+  });
 
   @override
   State<_FirePurpleGlowText> createState() => _FirePurpleGlowTextState();
 }
 
-class _FirePurpleGlowTextState extends State<_FirePurpleGlowText> with SingleTickerProviderStateMixin {
+class _FirePurpleGlowTextState extends State<_FirePurpleGlowText>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
 
   // Two rich purple hues to alternate between
@@ -909,7 +911,8 @@ class _FirePurpleGlowTextState extends State<_FirePurpleGlowText> with SingleTic
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(vsync: this, duration: widget.duration)..repeat(reverse: true);
+    _controller = AnimationController(vsync: this, duration: widget.duration)
+      ..repeat(reverse: true);
   }
 
   @override
@@ -930,9 +933,21 @@ class _FirePurpleGlowTextState extends State<_FirePurpleGlowText> with SingleTic
 
         // Strong outer glow using multiple shadows with increasing blur
         final shadows = [
-          Shadow(color: color.withValues(alpha: 0.6), blurRadius: 6, offset: const Offset(0, 0)),
-          Shadow(color: color.withValues(alpha: 0.45), blurRadius: 12, offset: const Offset(0, 0)),
-          Shadow(color: color.withValues(alpha: 0.25), blurRadius: 20, offset: const Offset(0, 0)),
+          Shadow(
+            color: color.withValues(alpha: 0.6),
+            blurRadius: 6,
+            offset: const Offset(0, 0),
+          ),
+          Shadow(
+            color: color.withValues(alpha: 0.45),
+            blurRadius: 12,
+            offset: const Offset(0, 0),
+          ),
+          Shadow(
+            color: color.withValues(alpha: 0.25),
+            blurRadius: 20,
+            offset: const Offset(0, 0),
+          ),
         ];
 
         return Text(
