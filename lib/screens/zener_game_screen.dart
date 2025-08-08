@@ -650,257 +650,254 @@ class _ZenerGameScreenState extends State<ZenerGameScreen> {
             children: [
               // Main game content
               Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: SingleChildScrollView(
-                  physics: const BouncingScrollPhysics(),
-                  child: Column(
-                    children: [
-                      // Game info section with animations
-                      AnimatedContainer(
-                        duration: const Duration(milliseconds: 300),
-                        curve: Curves.easeInOut,
-                        child: LayoutBuilder(
-                          builder: (context, constraints) {
-                            // Use column layout on very narrow screens
-                            if (constraints.maxWidth < 300) {
-                              return Column(
-                                children: [
-                                  AnimatedSwitcher(
-                                    duration: const Duration(milliseconds: 400),
-                                    transitionBuilder: (child, animation) {
-                                      return SlideTransition(
-                                        position: Tween<Offset>(
-                                          begin: const Offset(-0.5, 0),
-                                          end: Offset.zero,
-                                        ).animate(animation),
-                                        child: FadeTransition(
-                                          opacity: animation,
-                                          child: child,
-                                        ),
-                                      );
-                                    },
-                                    child: ScoreDisplayWidget(
-                                      key: ValueKey(_currentScore),
-                                      score: _currentScore,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  AnimatedContainer(
-                                    duration: const Duration(milliseconds: 300),
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 12,
-                                      vertical: 6,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: Theme.of(
-                                        context,
-                                      ).colorScheme.secondaryContainer,
-                                      borderRadius: BorderRadius.circular(6),
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: Theme.of(
-                                            context,
-                                          ).shadowColor.withValues(alpha: 0.1),
-                                          blurRadius: 4,
-                                          offset: const Offset(0, 2),
-                                        ),
-                                      ],
-                                    ),
-                                    child: AnimatedSwitcher(
-                                      duration: const Duration(
-                                        milliseconds: 300,
-                                      ),
-                                      child: Text(
-                                        'Turn ${_currentTurn > 25 ? 25 : _currentTurn} / 25',
-                                        key: ValueKey(_currentTurn),
-                                        style: Theme.of(context)
-                                            .textTheme
-                                            .bodyMedium
-                                            ?.copyWith(
-                                              fontWeight: FontWeight.w600,
-                                              color: Theme.of(context)
-                                                  .colorScheme
-                                                  .onSecondaryContainer,
-                                            ),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              );
-                            }
-
-                            // Use row layout for wider screens with flexible widgets
-                            return Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 22.0,
+                  vertical: 4.0,
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.max,
+                  children: [
+                    // Game info section with animations
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeInOut,
+                      child: LayoutBuilder(
+                        builder: (context, constraints) {
+                          // Use column layout on very narrow screens
+                          if (constraints.maxWidth < 300) {
+                            return Column(
                               children: [
-                                Flexible(
-                                  child: AnimatedSwitcher(
-                                    duration: const Duration(milliseconds: 400),
-                                    transitionBuilder: (child, animation) {
-                                      return SlideTransition(
-                                        position: Tween<Offset>(
-                                          begin: const Offset(-0.5, 0),
-                                          end: Offset.zero,
-                                        ).animate(animation),
-                                        child: FadeTransition(
-                                          opacity: animation,
-                                          child: child,
-                                        ),
-                                      );
-                                    },
-                                    child: ScoreDisplayWidget(
-                                      key: ValueKey(_currentScore),
-                                      score: _currentScore,
-                                    ),
+                                AnimatedSwitcher(
+                                  duration: const Duration(milliseconds: 400),
+                                  transitionBuilder: (child, animation) {
+                                    return SlideTransition(
+                                      position: Tween<Offset>(
+                                        begin: const Offset(-0.5, 0),
+                                        end: Offset.zero,
+                                      ).animate(animation),
+                                      child: FadeTransition(
+                                        opacity: animation,
+                                        child: child,
+                                      ),
+                                    );
+                                  },
+                                  child: ScoreDisplayWidget(
+                                    key: ValueKey(_currentScore),
+                                    score: _currentScore,
                                   ),
                                 ),
-                                // Remote viewing coordinates with subtle animation
+                                const SizedBox(height: 8),
                                 AnimatedContainer(
                                   duration: const Duration(milliseconds: 300),
                                   padding: const EdgeInsets.symmetric(
-                                    horizontal: 16,
-                                    vertical: 8,
+                                    horizontal: 12,
+                                    vertical: 6,
                                   ),
                                   decoration: BoxDecoration(
                                     color: Theme.of(
                                       context,
-                                    ).colorScheme.surfaceContainerHighest,
-                                    borderRadius: BorderRadius.circular(8),
-                                    border: Border.all(
-                                      color: Theme.of(context)
-                                          .colorScheme
-                                          .outline
-                                          .withValues(alpha: 0.3),
-                                    ),
+                                    ).colorScheme.secondaryContainer,
+                                    borderRadius: BorderRadius.circular(6),
                                     boxShadow: [
                                       BoxShadow(
                                         color: Theme.of(
                                           context,
-                                        ).shadowColor.withValues(alpha: 0.05),
-                                        blurRadius: 2,
+                                        ).shadowColor.withValues(alpha: 0.1),
+                                        blurRadius: 3,
                                         offset: const Offset(0, 1),
                                       ),
                                     ],
                                   ),
-                                  child: Column(
-                                    children: [
-                                      Text(
-                                        'Coordinates',
-                                        style: Theme.of(context)
-                                            .textTheme
-                                            .bodySmall
-                                            ?.copyWith(
-                                              color: Theme.of(context)
-                                                  .colorScheme
-                                                  .onSurface
-                                                  .withValues(alpha: 0.7),
-                                            ),
-                                      ),
-                                      const SizedBox(height: 4),
-                                      AnimatedDefaultTextStyle(
-                                        duration: const Duration(
-                                          milliseconds: 300,
-                                        ),
-                                        style:
-                                            Theme.of(
-                                              context,
-                                            ).textTheme.titleMedium?.copyWith(
-                                              fontWeight: FontWeight.bold,
-                                              fontFamily: 'monospace',
-                                            ) ??
-                                            const TextStyle(),
-                                        child: Text(
-                                          _gameController
-                                              .getRemoteViewingCoordinates(),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                Flexible(
-                                  child: AnimatedContainer(
+                                  child: AnimatedSwitcher(
                                     duration: const Duration(milliseconds: 300),
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 12,
-                                      vertical: 6,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: Theme.of(
-                                        context,
-                                      ).colorScheme.secondaryContainer,
-                                      borderRadius: BorderRadius.circular(6),
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: Theme.of(
-                                            context,
-                                          ).shadowColor.withValues(alpha: 0.1),
-                                          blurRadius: 4,
-                                          offset: const Offset(0, 2),
-                                        ),
-                                      ],
-                                    ),
-                                    child: AnimatedSwitcher(
-                                      duration: const Duration(
-                                        milliseconds: 300,
-                                      ),
-                                      child: Text(
-                                        'Turn ${_currentTurn > 25 ? 25 : _currentTurn} / 25',
-                                        key: ValueKey(_currentTurn),
-                                        style: Theme.of(context)
-                                            .textTheme
-                                            .bodyMedium
-                                            ?.copyWith(
-                                              fontWeight: FontWeight.w600,
-                                              color: Theme.of(context)
-                                                  .colorScheme
-                                                  .onSecondaryContainer,
-                                            ),
-                                      ),
+                                    child: Text(
+                                      'Turn ${_currentTurn > 25 ? 25 : _currentTurn} / 25',
+                                      key: ValueKey(_currentTurn),
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .bodyMedium
+                                          ?.copyWith(
+                                            fontWeight: FontWeight.w600,
+                                            color: Theme.of(
+                                              context,
+                                            ).colorScheme.onSecondaryContainer,
+                                          ),
                                     ),
                                   ),
                                 ),
                               ],
                             );
-                          },
+                          }
+
+                          // Use row layout for wider screens with flexible widgets
+                          return Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Flexible(
+                                child: AnimatedSwitcher(
+                                  duration: const Duration(milliseconds: 400),
+                                  transitionBuilder: (child, animation) {
+                                    return SlideTransition(
+                                      position: Tween<Offset>(
+                                        begin: const Offset(-0.5, 0),
+                                        end: Offset.zero,
+                                      ).animate(animation),
+                                      child: FadeTransition(
+                                        opacity: animation,
+                                        child: child,
+                                      ),
+                                    );
+                                  },
+                                  child: ScoreDisplayWidget(
+                                    key: ValueKey(_currentScore),
+                                    score: _currentScore,
+                                  ),
+                                ),
+                              ),
+                              // Remote viewing coordinates with subtle animation
+                              AnimatedContainer(
+                                duration: const Duration(milliseconds: 300),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 14,
+                                  vertical: 6,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.surfaceContainerHighest,
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(
+                                    color: Theme.of(context).colorScheme.outline
+                                        .withValues(alpha: 0.3),
+                                  ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Theme.of(
+                                        context,
+                                      ).shadowColor.withValues(alpha: 0.05),
+                                      blurRadius: 2,
+                                      offset: const Offset(0, 1),
+                                    ),
+                                  ],
+                                ),
+                                child: Column(
+                                  children: [
+                                    Text(
+                                      'Coordinates',
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .bodySmall
+                                          ?.copyWith(
+                                            color: Theme.of(context)
+                                                .colorScheme
+                                                .onSurface
+                                                .withValues(alpha: 0.7),
+                                          ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    AnimatedDefaultTextStyle(
+                                      duration: const Duration(
+                                        milliseconds: 300,
+                                      ),
+                                      style:
+                                          Theme.of(
+                                            context,
+                                          ).textTheme.titleMedium?.copyWith(
+                                            fontWeight: FontWeight.bold,
+                                            fontFamily: 'monospace',
+                                          ) ??
+                                          const TextStyle(),
+                                      child: Text(
+                                        _gameController
+                                            .getRemoteViewingCoordinates(),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Flexible(
+                                child: AnimatedContainer(
+                                  duration: const Duration(milliseconds: 300),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 10,
+                                    vertical: 4,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.secondaryContainer,
+                                    borderRadius: BorderRadius.circular(6),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Theme.of(
+                                          context,
+                                        ).shadowColor.withValues(alpha: 0.1),
+                                        blurRadius: 3,
+                                        offset: const Offset(0, 1),
+                                      ),
+                                    ],
+                                  ),
+                                  child: AnimatedSwitcher(
+                                    duration: const Duration(milliseconds: 300),
+                                    child: Text(
+                                      'Turn ${_currentTurn > 25 ? 25 : _currentTurn} / 25',
+                                      key: ValueKey(_currentTurn),
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .bodyMedium
+                                          ?.copyWith(
+                                            fontWeight: FontWeight.w600,
+                                            color: Theme.of(
+                                              context,
+                                            ).colorScheme.onSecondaryContainer,
+                                          ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          );
+                        },
+                      ),
+                    ),
+
+                    const SizedBox(height: 8),
+
+                    // Debug panel with slide animation
+                    AnimatedSize(
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeInOut,
+                      child: _buildDebugPanel(),
+                    ),
+
+                    const SizedBox(height: 22),
+
+                    // Card reveal area with enhanced animations (expanded and centered)
+                    Expanded(
+                      child: Center(
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 300),
+                          curve: Curves.easeInOut,
+                          child: CardRevealWidget(
+                            revealedSymbol: _revealedSymbol,
+                            isRevealed: _isCardRevealed,
+                          ),
                         ),
                       ),
+                    ),
 
-                      const SizedBox(height: 24),
-
-                      // Debug panel with slide animation
-                      AnimatedSize(
-                        duration: const Duration(milliseconds: 300),
-                        curve: Curves.easeInOut,
-                        child: _buildDebugPanel(),
+                    // Symbol selection area with staggered animations
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 400),
+                      curve: Curves.easeOutBack,
+                      child: SymbolSelectionWidget(
+                        onSymbolSelected: _onSymbolSelected,
+                        buttonsEnabled: _buttonsEnabled,
                       ),
+                    ),
 
-                      const SizedBox(height: 64),
-
-                      // Card reveal area with enhanced animations
-                      AnimatedContainer(
-                        duration: const Duration(milliseconds: 300),
-                        curve: Curves.easeInOut,
-                        child: CardRevealWidget(
-                          revealedSymbol: _revealedSymbol,
-                          isRevealed: _isCardRevealed,
-                        ),
-                      ),
-
-                      const SizedBox(height: 64),
-
-                      // Symbol selection area with staggered animations
-                      AnimatedContainer(
-                        duration: const Duration(milliseconds: 400),
-                        curve: Curves.easeOutBack,
-                        child: SymbolSelectionWidget(
-                          onSymbolSelected: _onSymbolSelected,
-                          buttonsEnabled: _buttonsEnabled,
-                        ),
-                      ),
-
-                      const SizedBox(height: 16),
-                    ],
-                  ),
+                    const SizedBox(height: 8),
+                  ],
                 ),
               ),
 

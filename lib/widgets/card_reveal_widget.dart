@@ -111,8 +111,6 @@ class _CardRevealWidgetState extends State<CardRevealWidget>
         final angle = _flipAnimation.value * math.pi;
 
         // Determine which side of the card to show
-        // When angle is less than pi/2, show the back (placeholder)
-        // When angle is greater than pi/2, show the front (revealed symbol)
         final showFront = angle >= math.pi / 2;
 
         // Apply perspective transform for 3D effect
@@ -122,8 +120,8 @@ class _CardRevealWidgetState extends State<CardRevealWidget>
             ..setEntry(3, 2, 0.001) // perspective
             ..rotateY(angle),
           child: Container(
-            width: 240,
-            height: 320,
+            width: 264.0, // 240 * 1.10
+            height: 352.0, // 320 * 1.10
             decoration: BoxDecoration(
               // Glass-like base to match the new style system
               color: cs.surface.withValues(alpha: 0.8),
@@ -203,8 +201,8 @@ class _CardRevealWidgetState extends State<CardRevealWidget>
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Container(
-                    width: 172,
-                    height: 172,
+                    width: 189.2, // 172 * 1.10
+                    height: 189.2, // 172 * 1.10
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       boxShadow: [
@@ -217,7 +215,7 @@ class _CardRevealWidgetState extends State<CardRevealWidget>
                     ),
                     child: SvgSymbol(
                       assetPath: symbol.assetPath,
-                      size: 162.0,
+                      size: 178.2, // 162 * 1.10
                       semanticLabel: symbol.displayName,
                     ),
                   ),
