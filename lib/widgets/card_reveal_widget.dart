@@ -31,10 +31,9 @@ class _CardRevealWidgetState extends State<CardRevealWidget>
   late AnimationController _animationController;
   late Animation<double> _flipAnimation;
   late Animation<double> _scaleAnimation;
-  
+
   // Keep track of the symbol to display during animation
   ZenerSymbol? _displayedSymbol;
-  bool _isFlipping = false;
 
   @override
   void initState() {
@@ -71,27 +70,24 @@ class _CardRevealWidgetState extends State<CardRevealWidget>
         // Card is being revealed - store the symbol and flip forward
         setState(() {
           _displayedSymbol = widget.revealedSymbol;
-          _isFlipping = true;
         });
         _animationController.forward();
       } else if (!widget.isRevealed && oldWidget.isRevealed) {
         // Card is being hidden - flip back but keep the symbol until animation completes
-        setState(() {
-          _isFlipping = true;
-        });
+        setState(() {});
         _animationController.reverse().then((_) {
           if (mounted) {
             setState(() {
               _displayedSymbol = null;
-              _isFlipping = false;
             });
           }
         });
       }
     }
-    
+
     // Update symbol if it changes while card is revealed
-    if (widget.isRevealed && widget.revealedSymbol != oldWidget.revealedSymbol) {
+    if (widget.isRevealed &&
+        widget.revealedSymbol != oldWidget.revealedSymbol) {
       setState(() {
         _displayedSymbol = widget.revealedSymbol;
       });

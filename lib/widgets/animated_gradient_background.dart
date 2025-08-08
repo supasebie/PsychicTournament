@@ -73,6 +73,8 @@ class _AnimatedGradientBackgroundState extends State<AnimatedGradientBackground>
           0.06 - k * 0.06,
         )!.withValues(alpha: o2.toDouble());
 
+        final int timeMs = _controller.lastElapsedDuration?.inMilliseconds ?? 0;
+
         return Container(
           decoration: BoxDecoration(
             gradient: LinearGradient(
@@ -91,7 +93,9 @@ class _AnimatedGradientBackgroundState extends State<AnimatedGradientBackground>
                   child: CustomPaint(
                     painter: _NeonGlowPainter(
                       color: scheme.primary,
-                      t: _t.value * 1.20, // doubled again (2x of the previous 0.60)
+                      t:
+                          _t.value *
+                          1.20, // doubled again (2x of the previous 0.60)
                     ),
                   ),
                 ),
@@ -105,6 +109,20 @@ class _AnimatedGradientBackgroundState extends State<AnimatedGradientBackground>
                         color: scheme.onSurface.withValues(alpha: 0.7),
                         t: _t.value,
                         count: 192,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              // Occasional shooting star layer
+              Positioned.fill(
+                child: IgnorePointer(
+                  child: RepaintBoundary(
+                    child: CustomPaint(
+                      painter: _ShootingStarPainter(
+                        color: scheme.onSurface,
+                        timeMs: timeMs,
+                        seed: 1337,
                       ),
                     ),
                   ),
@@ -147,7 +165,8 @@ class _ShimmerSweepPainter extends CustomPainter {
 
     // Position progresses from -0.5 to 1.5 to ensure full pass off-screen.
     // Multiply time to slow the sweep frequency further if needed.
-    final double p = (t) * 2.0 - 0.5; // -0.5..1.5 (full sweep per controller cycle)
+    final double p =
+        (t) * 2.0 - 0.5; // -0.5..1.5 (full sweep per controller cycle)
 
     // Shimmer band thickness relative to diagonal length
     final double band = (math.sqrt(w * w + h * h)) * 0.22;
@@ -223,9 +242,12 @@ class _StarfieldPainter extends CustomPainter {
       final double x = rx * w;
 
       // Twinkle using different frequencies per star (slowed and softened)
-      final double f = 0.10 + 0.20 * ((_hash(i + 7) * 1.3) % 1.0); // 0.10..0.30x
+      final double f =
+          0.10 + 0.20 * ((_hash(i + 7) * 1.3) % 1.0); // 0.10..0.30x
       final double phase = _hash(i + 23) * 2 * math.pi;
-      final double a = 0.03 + 0.10 * (0.5 + 0.5 * math.sin((t * 0.4 * 2 * math.pi * f) + phase));
+      final double a =
+          0.03 +
+          0.10 * (0.5 + 0.5 * math.sin((t * 0.4 * 2 * math.pi * f) + phase));
 
       final double sizePx = 0.6 + 1.4 * (_hash(i + 211) * 1.0);
 
@@ -236,7 +258,9 @@ class _StarfieldPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _StarfieldPainter oldDelegate) {
-    return oldDelegate.t != t || oldDelegate.color != color || oldDelegate.count != count;
+    return oldDelegate.t != t ||
+        oldDelegate.color != color ||
+        oldDelegate.count != count;
   }
 }
 
@@ -288,5 +312,104 @@ class _NeonGlowPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant _NeonGlowPainter oldDelegate) {
     return oldDelegate.t != t || oldDelegate.color != color;
+  }
+}
+
+class _ShootingStarPainter extends CustomPainter {
+  final Color color;
+  final int timeMs;
+  final int seed;
+
+  _ShootingStarPainter({
+    required this.color,
+    required this.timeMs,
+    this.seed = 1337,
+  });
+
+  double _hashDouble(int x) {
+    final double s = math.sin((x + seed) * 12.9898) * 43758.5453;
+    return s - s.floor();
+  }
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    // Drive appearance in epochs so it's occasional and deterministic.
+    const int periodMs = 12000; // evaluate spawn every 12s
+    final int epoch = timeMs ~/ periodMs;
+    final double phase = ((timeMs % periodMs) / periodMs);
+
+    // Only render a shooting star in some epochs (about 1/3 probability)
+    final double chance = _hashDouble(epoch);
+    if (chance > 0.333) {
+      return; // no shooting star this epoch
+    }
+
+    // Use only a sub-window of the period to actually animate the star (about 1.4s window)
+    const double windowStart = 0.15;
+    const double windowEnd = 0.30;
+    final double windowLen = (windowEnd - windowStart);
+    double p = (phase - windowStart) / windowLen; // 0..1 during active window
+    if (p <= 0.0 || p >= 1.0) {
+      return;
+    }
+
+    // Randomize start position and trajectory slightly per epoch
+    final double xStartJitter =
+        (_hashDouble(epoch + 17) - 0.5) * 0.4; // -0.2..0.2 of width
+    final double yBase =
+        0.15 + 0.45 * _hashDouble(epoch + 29); // 15%..60% height
+    final double slope =
+        0.18 + 0.24 * _hashDouble(epoch + 41); // gentle downward slope
+
+    final double w = size.width;
+    final double h = size.height;
+
+    final Offset start = Offset(w * (xStartJitter), h * yBase);
+    final Offset dir = Offset(
+      w * 1.2,
+      h * slope,
+    ); // mostly right with slight down
+    final Offset pos = start + dir * p;
+
+    // Trail parameters
+    final double speedPx =
+        dir.distance /
+        (windowLen *
+            periodMs /
+            1000.0); // pixels per second (unused but indicative)
+    final Offset unitDir = dir / dir.distance;
+    final double mainLen = 80.0 + 60.0 * _hashDouble(epoch + 53);
+    final double tailLen = mainLen * (0.6 + 0.3 * (1.0 - p));
+    final double thickness = 2.0 + 1.0 * _hashDouble(epoch + 61);
+
+    final Paint headPaint = Paint()
+      ..color = color.withValues(
+        alpha: (0.80 * (0.8 + 0.2 * _hashDouble(epoch + 73))),
+      )
+      ..strokeWidth = thickness
+      ..strokeCap = StrokeCap.round
+      ..style = PaintingStyle.stroke
+      ..blendMode = BlendMode.plus;
+
+    final Paint tailPaint = Paint()
+      ..color = color.withValues(alpha: 0.20)
+      ..strokeWidth = thickness * 1.6
+      ..strokeCap = StrokeCap.round
+      ..style = PaintingStyle.stroke
+      ..blendMode = BlendMode.plus;
+
+    // Draw tail first (fainter and longer), then bright head segment
+    final Offset tailEnd = pos - unitDir * tailLen;
+    canvas.drawLine(tailEnd, pos, tailPaint);
+
+    final Offset headEnd = pos - unitDir * (tailLen * 0.35);
+    canvas.drawLine(headEnd, pos, headPaint);
+  }
+
+  @override
+  bool shouldRepaint(covariant _ShootingStarPainter oldDelegate) {
+    return oldDelegate.timeMs != timeMs ||
+        oldDelegate.color != color ||
+        oldDelegate.seed != seed;
   }
 }
