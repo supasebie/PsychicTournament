@@ -133,15 +133,7 @@ class _FeedbackOverlayState extends State<FeedbackOverlay>
             scale: clampedScale,
             child: Opacity(
               opacity: clampedOpacity,
-              child: Text(
-                widget.message,
-                style: TextStyle(
-                  fontSize: 48.0,
-                  fontWeight: FontWeight.bold,
-                  color: _getTextColor(),
-                ),
-                textAlign: TextAlign.center,
-              ),
+              child: _buildGlowingText(widget.message, widget.isCorrect),
             ),
           ),
         );
@@ -151,6 +143,54 @@ class _FeedbackOverlayState extends State<FeedbackOverlay>
 
   /// Returns the text color based on whether the guess was correct
   Color _getTextColor() {
-    return widget.isCorrect ? const Color(0xFF4CAF50) : const Color(0xFFF44336);
+    // Fallback solid color (used for shadows/glow computation)
+    return widget.isCorrect ? const Color(0xFFFFD700) : const Color(0xFFF44336);
+  }
+
+  /// Builds glowing gradient text. Uses a gold gradient when correct; red/orange when incorrect.
+  Widget _buildGlowingText(String text, bool isCorrect) {
+    final List<Color> gradientColors = isCorrect
+        ? const [
+            Color(0xFFFFF4C2), // pale gold highlight
+            Color(0xFFFFD166), // rich gold
+            Color(0xFFD4AF37), // metallic gold
+          ]
+        : const [
+            Color(0xFFFFC2C2), // pale red highlight
+            Color(0xFFFF6B6B), // red
+            Color(0xFFB00020), // deep red
+          ];
+
+    final baseColor = _getTextColor();
+
+    // Layered shadows to simulate outer glow
+    final List<Shadow> glowShadows = [
+      Shadow(color: baseColor.withValues(alpha: 0.85), blurRadius: 32, offset: const Offset(0, 0)),
+      Shadow(color: baseColor.withValues(alpha: 0.50), blurRadius: 16, offset: const Offset(0, 0)),
+      Shadow(color: Colors.white.withValues(alpha: isCorrect ? 0.35 : 0.2), blurRadius: 8, offset: const Offset(0, 0)),
+    ];
+
+    return ShaderMask(
+      shaderCallback: (Rect bounds) {
+        return LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: gradientColors,
+        ).createShader(bounds);
+      },
+      blendMode: BlendMode.srcIn,
+      child: Text(
+        text,
+        textAlign: TextAlign.center,
+        style: TextStyle(
+          fontSize: 52.0,
+          fontWeight: FontWeight.w800,
+          letterSpacing: 1.2,
+          // Use a bright base color so shadows render even with gradient mask
+          color: Colors.white,
+          shadows: glowShadows,
+        ),
+      ),
+    );
   }
 }

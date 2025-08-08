@@ -48,6 +48,10 @@ class _ZenerGameScreenState extends State<ZenerGameScreen> {
   Timer? _scoreUpdateTimer;
   Timer? _overlayTimer;
 
+  // Flash effect state and timer for correct guesses
+  bool _flashScreen = false;
+  Timer? _flashTimer;
+
   @override
   void initState() {
     super.initState();
@@ -63,12 +67,14 @@ class _ZenerGameScreenState extends State<ZenerGameScreen> {
     _feedbackTimer?.cancel();
     _scoreUpdateTimer?.cancel();
     _overlayTimer?.cancel();
+    _flashTimer?.cancel();
 
     // Clear timer references
     _turnTransitionTimer = null;
     _feedbackTimer = null;
     _scoreUpdateTimer = null;
     _overlayTimer = null;
+    _flashTimer = null;
 
     try {
       _postSessionInterstitial?.dispose();
@@ -221,6 +227,25 @@ class _ZenerGameScreenState extends State<ZenerGameScreen> {
 
       // Trigger haptic feedback based on guess result with error handling
       _triggerHapticFeedbackSafely(result.isCorrect);
+
+      // Trigger a brief screen flash on correct guesses
+      if (result.isCorrect) {
+        try {
+          _flashTimer?.cancel();
+          setState(() {
+            _flashScreen = true;
+          });
+          _flashTimer = Timer(const Duration(milliseconds: 200), () {
+            if (mounted) {
+              setState(() {
+                _flashScreen = false;
+              });
+            }
+          });
+        } catch (e) {
+          debugPrint('Error triggering flash effect: $e');
+        }
+      }
 
       // Cancel any existing overlay timer
       _overlayTimer?.cancel();
@@ -412,6 +437,7 @@ class _ZenerGameScreenState extends State<ZenerGameScreen> {
       _feedbackTimer = null;
       _scoreUpdateTimer = null;
       _overlayTimer = null;
+      _flashTimer = null;
     } catch (e) {
       debugPrint('Error cancelling timers: $e');
     }
@@ -898,6 +924,36 @@ class _ZenerGameScreenState extends State<ZenerGameScreen> {
 
                     const SizedBox(height: 8),
                   ],
+                ),
+              ),
+
+              // Screen flash overlay for correct guesses (brief, animated)
+              IgnorePointer(
+                ignoring: true,
+                child: AnimatedOpacity(
+                  duration: const Duration(milliseconds: 620),
+                  curve: Curves.easeOut,
+                  opacity: _flashScreen ? 0.9 : 0.0,
+                  child: Container(
+                    decoration: const BoxDecoration(
+                      // Warm gold radial flash that brightens the center and fades outwards
+                      gradient: RadialGradient(
+                        center: Alignment.center,
+                        radius: 1.2,
+                        colors: [
+                          Color.fromARGB(
+                            255,
+                            102,
+                            2,
+                            251,
+                          ), // soft pale gold center
+                          Color.fromARGB(255, 105, 5, 255), // rich gold mid
+                          Color.fromARGB(255, 32, 2, 114), // transparent edge
+                        ],
+                        stops: [0.0, 0.4, 1.0],
+                      ),
+                    ),
+                  ),
                 ),
               ),
 
