@@ -697,6 +697,7 @@ class _TodayTopTile extends StatelessWidget {
           secondaryText: 'by $username',
           icon: Icons.wb_sunny,
           accent: colorScheme.primary,
+          leading: const _AnimatedSunIcon(size: 22),
         );
       },
     );
@@ -750,6 +751,7 @@ class _ScoreTile extends StatelessWidget {
   final String? secondaryText;
   final IconData icon;
   final Color accent;
+  final Widget? leading; // optional custom leading widget (overrides icon)
 
   const _ScoreTile({
     required this.label,
@@ -757,6 +759,7 @@ class _ScoreTile extends StatelessWidget {
     required this.secondaryText,
     required this.icon,
     required this.accent,
+    this.leading,
   });
 
   @override
@@ -805,7 +808,7 @@ class _ScoreTile extends StatelessWidget {
               ),
             ),
             padding: const EdgeInsets.all(10),
-            child: Icon(icon, color: accent, size: 22),
+            child: leading ?? Icon(icon, color: accent, size: 22),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -883,6 +886,76 @@ class _ScoreTileError extends StatelessWidget {
       secondaryText: null,
       icon: Icons.error_outline,
       accent: colorScheme.error.withValues(alpha: 0.9),
+    );
+  }
+}
+
+/// Simple animated yellow-orange sun icon: rotates gently and pulses color.
+class _AnimatedSunIcon extends StatefulWidget {
+  final double size;
+  const _AnimatedSunIcon({super.key, this.size = 24});
+
+  @override
+  State<_AnimatedSunIcon> createState() => _AnimatedSunIconState();
+}
+
+class _AnimatedSunIconState extends State<_AnimatedSunIcon>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+
+  static const Color _sunYellow = Color(0xFFFFEB3B); // bright yellow
+  static const Color _sunOrange = Color(0xFFFFA000); // deep orange
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 6),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        // Rotate continuously
+        final angle = _controller.value * 6.283185307179586; // 2*pi
+        // Pulse color between yellow and orange
+        final t = (0.5 - (0.5 - _controller.value).abs()) * 2.0; // 0->1->0 triangle
+        final color = Color.lerp(_sunYellow, _sunOrange, t);
+
+        return Transform.rotate(
+          angle: angle,
+          child: Container(
+            width: widget.size + 10,
+            height: widget.size + 10,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: (color ?? _sunYellow).withValues(alpha: 0.45),
+                  blurRadius: 10,
+                  spreadRadius: 1.5,
+                ),
+              ],
+            ),
+            child: Icon(
+              Icons.wb_sunny,
+              color: color,
+              size: widget.size,
+            ),
+          ),
+        );
+      },
     );
   }
 }
