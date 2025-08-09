@@ -686,6 +686,7 @@ class _TodayTopTile extends StatelessWidget {
             secondaryText: null,
             icon: Icons.wb_sunny,
             accent: colorScheme.tertiary,
+            leading: const _AnimatedSunIcon(size: 22),
           );
         }
         final row = data.first;
@@ -728,6 +729,7 @@ class _MonthTopTile extends StatelessWidget {
             secondaryText: null,
             icon: Icons.calendar_today,
             accent: colorScheme.secondary,
+            leading: const _AnimatedCalendarIcon(size: 22),
           );
         }
         final top = data.first;
@@ -739,6 +741,7 @@ class _MonthTopTile extends StatelessWidget {
           secondaryText: 'by $username',
           icon: Icons.calendar_today,
           accent: colorScheme.secondary,
+          leading: const _AnimatedCalendarIcon(size: 22),
         );
       },
     );
@@ -886,6 +889,96 @@ class _ScoreTileError extends StatelessWidget {
       secondaryText: null,
       icon: Icons.error_outline,
       accent: colorScheme.error.withValues(alpha: 0.9),
+    );
+  }
+}
+
+/// Animated calendar icon with a subtle page-flip and purple glow.
+class _AnimatedCalendarIcon extends StatefulWidget {
+  final double size;
+  const _AnimatedCalendarIcon({super.key, this.size = 24});
+
+  @override
+  State<_AnimatedCalendarIcon> createState() => _AnimatedCalendarIconState();
+}
+
+class _AnimatedCalendarIconState extends State<_AnimatedCalendarIcon>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+
+  static const Color _purpleA = Color(0xFFB388FF);
+  static const Color _purpleB = Color(0xFF7C4DFF);
+  static const double _pi = 3.141592653589793;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 6),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        final t = _controller.value; // 0..1 repeating
+        // Flip during first 18% of the cycle, otherwise rest.
+        double angle;
+        double flipPhase;
+        if (t < 0.18) {
+          flipPhase = t / 0.18; // 0..1
+          angle = Curves.easeInOut.transform(flipPhase) * _pi;
+        } else if (t > 0.82) {
+          // Flip back near the end for symmetry
+          flipPhase = (1.0 - t) / 0.18; // 0..1
+          angle = Curves.easeInOut.transform(flipPhase) * _pi;
+        } else {
+          angle = 0.0;
+        }
+
+        // Pulse color between two purples for a cool glow
+        final color = Color.lerp(_purpleA, _purpleB, (t * 2) % 1.0);
+
+        return Container(
+          width: widget.size + 10,
+          height: widget.size + 10,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: (color ?? _purpleA).withValues(alpha: 0.45),
+                blurRadius: 10,
+                spreadRadius: 1.5,
+              ),
+            ],
+          ),
+          child: Transform(
+            alignment: Alignment.center,
+            transform: Matrix4.identity()
+              ..setEntry(3, 2, 0.001)
+              ..rotateY(angle),
+            child: Transform(
+              alignment: Alignment.center,
+              transform: Matrix4.identity()..rotateY(angle > _pi / 2 ? _pi : 0),
+              child: Icon(
+                Icons.calendar_today,
+                color: color,
+                size: widget.size,
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }
