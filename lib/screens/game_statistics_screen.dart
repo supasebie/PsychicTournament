@@ -3,6 +3,7 @@ import 'package:fl_chart/fl_chart.dart';
 import '../database/models/game_statistics.dart';
 import '../database/services/game_statistics_service.dart';
 import '../database/database_exceptions.dart';
+import '../widgets/animated_gradient_background.dart';
 
 /// Screen displaying comprehensive game statistics and performance analytics
 /// Shows overall performance metrics, hit rates, and empty state handling
@@ -120,7 +121,11 @@ class _GameStatisticsScreenState extends State<GameStatisticsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: _buildBody(),
+      body: AnimatedGradientBackground(
+        child: SafeArea(
+          child: _buildBody(),
+        ),
+      ),
     );
   }
 
