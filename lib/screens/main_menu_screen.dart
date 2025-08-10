@@ -305,8 +305,6 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
           onPressed: () {
             Navigator.pushNamed(context, '/stats-menu');
           },
-          containerColor: Theme.of(context).colorScheme.secondaryContainer,
-          onContainerColor: Theme.of(context).colorScheme.onSecondaryContainer,
         ),
         const SizedBox(height: 24),
 
@@ -319,8 +317,6 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
           onPressed: () {
             Navigator.pushNamed(context, '/options');
           },
-          containerColor: Theme.of(context).colorScheme.tertiaryContainer,
-          onContainerColor: Theme.of(context).colorScheme.onTertiaryContainer,
         ),
       ],
     );
@@ -415,88 +411,105 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
     required String title,
     required String subtitle,
     required VoidCallback? onPressed,
-    Color? containerColor,
-    Color? onContainerColor,
   }) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final Color bg = containerColor ?? colorScheme.secondaryContainer;
-    final Color fg = onContainerColor ?? colorScheme.onSecondaryContainer;
+    final screenWidth = MediaQuery.of(context).size.width;
 
-    // Prevent overflow in secondary buttons as well.
+    double buttonHeight;
+    double horizontalPadding;
+    double iconSize;
+    double iconSpacing;
+
+    if (screenWidth >= 800) {
+      buttonHeight = 95.0;
+      horizontalPadding = 32.0;
+      iconSize = 32.0;
+      iconSpacing = 24.0;
+    } else if (screenWidth >= 600) {
+      buttonHeight = 90.0;
+      horizontalPadding = 28.0;
+      iconSize = 30.0;
+      iconSpacing = 22.0;
+    } else {
+      buttonHeight = 85.0;
+      horizontalPadding = 24.0;
+      iconSize = 28.0;
+      iconSpacing = 20.0;
+    }
+
+    // Match Performance screen secondary button styling exactly
     return ConstrainedBox(
-      constraints: const BoxConstraints(minHeight: 85),
-      child: Semantics(
-        label: '$title - $subtitle',
-        button: true,
-        enabled: onPressed != null,
-        child: OutlinedButton(
-          onPressed: onPressed,
-          style: OutlinedButton.styleFrom(
-            backgroundColor: bg,
-            foregroundColor: fg,
-            side: BorderSide(
-              color: fg.withValues(alpha: 0.3),
-              width: 1.5,
-            ),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+      constraints: BoxConstraints(minHeight: buttonHeight),
+      child: OutlinedButton(
+        onPressed: onPressed,
+        style: OutlinedButton.styleFrom(
+          backgroundColor: colorScheme.surface,
+          foregroundColor: colorScheme.onSurface.withValues(alpha: 0.7),
+          side: BorderSide(
+            color: colorScheme.outline.withValues(alpha: 0.5),
+            width: 1.5,
           ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: fg.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(
-                  icon,
-                  size: 28,
-                  color: fg.withValues(alpha: 0.85),
-                ),
-              ),
-              const SizedBox(width: 20),
-              Expanded(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: fg,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      subtitle,
-                      softWrap: true,
-                      maxLines: 2,
-                      overflow: TextOverflow.fade,
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        height: 1.2,
-                        color: fg.withValues(alpha: 0.75),
-                        fontStyle: FontStyle.italic,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 8),
-              Icon(
-                Icons.chevron_right,
-                color: fg.withValues(alpha: 0.9),
-                size: 22,
-              ),
-            ],
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
           ),
+          padding: EdgeInsets.symmetric(
+            horizontal: horizontalPadding,
+            vertical: 12,
+          ),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: colorScheme.onSurface.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                icon,
+                size: iconSize,
+                color: colorScheme.onSurface.withValues(alpha: 0.65),
+              ),
+            ),
+            SizedBox(width: iconSpacing),
+            Expanded(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: colorScheme.onSurface.withValues(alpha: 0.75),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    subtitle,
+                    softWrap: true,
+                    maxLines: 2,
+                    overflow: TextOverflow.fade,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      height: 1.2,
+                      color: colorScheme.onSurface.withValues(alpha: 0.5),
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            Icon(
+              Icons.arrow_forward_ios,
+              color: colorScheme.onSurface.withValues(alpha: 0.5),
+              size: 20,
+            ),
+          ],
         ),
       ),
     );
