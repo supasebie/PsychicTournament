@@ -25,7 +25,6 @@ class OptionsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final isSignedIn = SupabaseService.isSignedIn;
 
     return Scaffold(
       body: AnimatedGradientBackground(
@@ -72,28 +71,36 @@ class OptionsScreen extends StatelessWidget {
                     const SizedBox(height: 16),
 
                     // Buttons styled like _buildSecondaryButton in Performance menu
-                    _OptionsMenuButton(
-                      icon: isSignedIn ? Icons.logout : Icons.login,
-                      title: isSignedIn ? 'Sign Out' : 'Sign In',
-                      subtitle: isSignedIn
-                          ? 'Sign out of your account'
-                          : 'Sign in to sync and save scores',
-                      onPressed: () async {
-                        if (isSignedIn) {
-                          await SupabaseService.signOut();
-                          if (!context.mounted) return;
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Signed out')),
-                          );
-                        } else {
-                          if (!context.mounted) return;
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (ctx) => const AuthScreen(),
-                            ),
-                          );
-                        }
+                    StreamBuilder(
+                      // Listen to auth state and rebuild button instantly on changes
+                      stream: SupabaseService.authStateChanges,
+                      builder: (ctx, snapshot) {
+                        final signedIn = SupabaseService.isSignedIn;
+                        return _OptionsMenuButton(
+                          icon: signedIn ? Icons.logout : Icons.login,
+                          title: signedIn ? 'Sign Out' : 'Sign In',
+                          subtitle: signedIn
+                              ? 'Sign out of your account'
+                              : 'Sign in to sync and save scores',
+                          onPressed: () async {
+                            if (signedIn) {
+                              await SupabaseService.signOut();
+                              if (!context.mounted) return;
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Signed out')),
+                              );
+                            } else {
+                              if (!context.mounted) return;
+                              await Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (ctx) => const AuthScreen(),
+                                ),
+                              );
+                              // After returning from Auth, the stream will emit if state changed.
+                            }
+                          },
+                        );
                       },
                     ),
                     const SizedBox(height: 20),
