@@ -327,23 +327,16 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
         ),
         const SizedBox(height: 24),
 
-        // Authentication Button (Secondary)
-        if (isSignedIn)
-          _buildSecondaryButton(
-            context: context,
-            icon: Icons.person,
-            title: userDisplayName ?? 'User',
-            subtitle: 'Tap to sign out',
-            onPressed: () => _handleSignOut(context),
-          )
-        else
-          _buildSecondaryButton(
-            context: context,
-            icon: Icons.login,
-            title: 'Sign In',
-            subtitle: 'Save your scores',
-            onPressed: () => _navigateToAuth(context),
-          ),
+        // Options Button (Secondary) -> navigates to Options screen
+        _buildSecondaryButton(
+          context: context,
+          icon: Icons.settings,
+          title: 'Options',
+          subtitle: 'Account / scores etc.',
+          onPressed: () {
+            Navigator.pushNamed(context, '/options');
+          },
+        ),
       ],
     );
   }
