@@ -258,13 +258,6 @@ class _ResultsReviewScreenState extends State<ResultsReviewScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Game Results'),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => _handleBackNavigation(context),
-        ),
-      ),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(16.0),

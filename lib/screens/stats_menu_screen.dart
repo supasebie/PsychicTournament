@@ -42,10 +42,6 @@ class PerformanceMenuScreen extends StatelessWidget {
     final colorScheme = theme.colorScheme;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Performance'),
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-      ),
       body: AnimatedGradientBackground(
         child: SafeArea(
           child: Center(

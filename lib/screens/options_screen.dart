@@ -28,10 +28,6 @@ class OptionsScreen extends StatelessWidget {
     final isSignedIn = SupabaseService.isSignedIn;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Options'),
-        backgroundColor: colorScheme.inversePrimary,
-      ),
       body: AnimatedGradientBackground(
         child: SafeArea(
           child: Center(

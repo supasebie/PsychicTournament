@@ -627,22 +627,6 @@ ${session.finalScore >= 13 ? '🌟 Above average performance!' : '💪 Keep prac
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Session Details'),
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        actions: [
-          IconButton(
-            onPressed: _shareSession,
-            icon: const Icon(Icons.share),
-            tooltip: 'Share Results',
-          ),
-          IconButton(
-            onPressed: _deleteSession,
-            icon: const Icon(Icons.delete),
-            tooltip: 'Delete Session',
-          ),
-        ],
-      ),
       body: _isLoading
           ? _buildLoadingState()
           : _errorMessage != null

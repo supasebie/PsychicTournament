@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../database/models/game_session.dart';
 import '../database/services/game_database_service.dart';
 import '../database/database_exceptions.dart';
+import '../widgets/animated_gradient_background.dart';
 
 /// Screen displaying a chronological list of all game sessions
 /// Supports pagination, pull-to-refresh, loading states, and error handling
@@ -17,7 +18,7 @@ class _GameHistoryScreenState extends State<GameHistoryScreen> {
 
   // Pagination constants
   static const int _pageSize = 8;
-  
+
   // State variables
   List<GameSession> _sessions = [];
   bool _isLoading = true;
@@ -50,7 +51,7 @@ class _GameHistoryScreenState extends State<GameHistoryScreen> {
 
       // Get total count for pagination info
       final totalCount = await _databaseService.getTotalGameSessionsCount();
-      
+
       // Load first page
       final sessions = await _databaseService.getGameSessionsPaginated(
         limit: _pageSize,
@@ -298,7 +299,7 @@ class _GameHistoryScreenState extends State<GameHistoryScreen> {
                 onPressed: () => _showDeleteConfirmation(session),
                 tooltip: 'Delete session',
               ),
-              Icon(Icons.chevron_right, color: Theme.of(context).primaryColor),
+              Icon(Icons.chevron_right, color: Colors.white),
             ],
           ),
           onTap: () async {
@@ -401,7 +402,7 @@ class _GameHistoryScreenState extends State<GameHistoryScreen> {
   /// Build the pagination controls (Load More button)
   Widget _buildPaginationControls() {
     final remainingGames = _totalSessions - _sessions.length;
-    
+
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
       child: Column(
@@ -423,9 +424,7 @@ class _GameHistoryScreenState extends State<GameHistoryScreen> {
                     ? 'Load More ($_pageSize games)'
                     : 'Load More ($remainingGames games)',
               ),
-              style: ElevatedButton.styleFrom(
-                minimumSize: const Size(200, 48),
-              ),
+              style: ElevatedButton.styleFrom(minimumSize: const Size(200, 48)),
             )
           else if (_isLoadingMore)
             const CircularProgressIndicator()
@@ -433,11 +432,11 @@ class _GameHistoryScreenState extends State<GameHistoryScreen> {
             Chip(
               label: Text(
                 'All games loaded',
-                style: TextStyle(
-                  color: Theme.of(context).disabledColor,
-                ),
+                style: TextStyle(color: Theme.of(context).disabledColor),
               ),
-              backgroundColor: Theme.of(context).disabledColor.withValues(alpha: 0.1),
+              backgroundColor: Theme.of(
+                context,
+              ).disabledColor.withValues(alpha: 0.1),
             ),
         ],
       ),
@@ -447,46 +446,36 @@ class _GameHistoryScreenState extends State<GameHistoryScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text('Game History'),
-            if (_totalSessions > 0)
-              Text(
-                'Total: $_totalSessions games',
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
-          ],
-        ),
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-      ),
-      body: _isLoading
-          ? _buildLoadingState()
-          : _errorMessage != null
+      body: AnimatedGradientBackground(
+        child: SafeArea(
+          child: _isLoading
+              ? _buildLoadingState()
+              : _errorMessage != null
               ? _buildErrorState()
               : _sessions.isEmpty
-                  ? _buildEmptyState()
-                  : RefreshIndicator(
-                      onRefresh: _onRefresh,
-                      child: Column(
-                        children: [
-                          // List of sessions
-                          Expanded(
-                            child: ListView.builder(
-                              padding: const EdgeInsets.symmetric(vertical: 8),
-                              itemCount: _sessions.length,
-                              itemBuilder: (context, index) {
-                                return _buildSessionItem(_sessions[index]);
-                              },
-                            ),
-                          ),
-                          // Pagination controls at the bottom
-                          if (_sessions.length < _totalSessions || _isLoadingMore)
-                            _buildPaginationControls(),
-                        ],
+              ? _buildEmptyState()
+              : RefreshIndicator(
+                  onRefresh: _onRefresh,
+                  child: Column(
+                    children: [
+                      // List of sessions
+                      Expanded(
+                        child: ListView.builder(
+                          padding: const EdgeInsets.only(top: 64, bottom: 8),
+                          itemCount: _sessions.length,
+                          itemBuilder: (context, index) {
+                            return _buildSessionItem(_sessions[index]);
+                          },
+                        ),
                       ),
-                    ),
+                      // Pagination controls at the bottom
+                      if (_sessions.length < _totalSessions || _isLoadingMore)
+                        _buildPaginationControls(),
+                    ],
+                  ),
+                ),
+        ),
+      ),
     );
   }
 }

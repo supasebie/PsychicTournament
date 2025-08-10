@@ -120,10 +120,6 @@ class _GameStatisticsScreenState extends State<GameStatisticsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Game Statistics'),
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-      ),
       body: _buildBody(),
     );
   }
