@@ -665,7 +665,7 @@ class _TodayTopTile extends StatelessWidget {
             primaryText: 'Be the first to score over 10',
             secondaryText: null,
             icon: Icons.wb_sunny,
-            accent: colorScheme.tertiary,
+            accent: colorScheme.secondary,
             leading: const _AnimatedSunIcon(size: 22),
           );
         }
@@ -677,7 +677,7 @@ class _TodayTopTile extends StatelessWidget {
           primaryText: '$score points',
           secondaryText: 'by $username',
           icon: Icons.wb_sunny,
-          accent: colorScheme.primary,
+          accent: colorScheme.secondary,
           leading: const _AnimatedSunIcon(size: 22),
         );
       },

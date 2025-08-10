@@ -107,7 +107,7 @@ class OptionsScreen extends StatelessWidget {
                           builder: (ctx) => AlertDialog(
                             title: const Text('Reset scores?'),
                             content: const Text(
-                              'This will delete all local game sessions and scores stored on this device. This cannot be undone.',
+                              'This will delete all local game sessions and scores stored on this device. This will not reset leaderboard scores! This cannot be undone.',
                             ),
                             actions: [
                               TextButton(
@@ -254,4 +254,3 @@ class _OptionsMenuButton extends StatelessWidget {
     );
   }
 }
-

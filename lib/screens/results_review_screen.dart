@@ -5,6 +5,7 @@ import '../database/converters/game_data_converter.dart';
 import '../database/database_exceptions.dart';
 import '../widgets/svg_symbol.dart';
 import '../services/high_scores_service.dart';
+import '../widgets/animated_gradient_background.dart';
 
 /// Screen that displays detailed game results showing all 25 turns
 /// with user guesses compared to correct answers
@@ -258,235 +259,243 @@ class _ResultsReviewScreenState extends State<ResultsReviewScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            children: [
-              // Score summary section
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        'Final Score:',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      Text(
-                        '${widget.finalScore}/25',
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.blue,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              // Save status indicator
-              if (_isSaving || _saveError != null || _saveCompleted)
+      body: AnimatedGradientBackground(
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              children: [
+                // Score summary section
                 Card(
                   child: Padding(
-                    padding: const EdgeInsets.all(12.0),
-                    child: Row(
-                      children: [
-                        if (_isSaving) ...[
-                          const SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          ),
-                          const SizedBox(width: 12),
-                          const Text('Saving game data...'),
-                        ] else if (_saveError != null) ...[
-                          Icon(
-                            Icons.error_outline,
-                            color: Colors.red.shade600,
-                            size: 20,
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Text(
-                              _saveError!,
-                              style: TextStyle(color: Colors.red.shade700),
-                            ),
-                          ),
-                          TextButton(
-                            onPressed: _retrySave,
-                            child: const Text('Retry'),
-                          ),
-                        ] else if (_saveCompleted) ...[
-                          Icon(
-                            Icons.check_circle_outline,
-                            color: Colors.green.shade600,
-                            size: 20,
-                          ),
-                          const SizedBox(width: 12),
-                          const Text('Game data saved successfully'),
-                        ],
-                      ],
-                    ),
-                  ),
-                ),
-              if (_isSaving || _saveError != null || _saveCompleted)
-                const SizedBox(height: 16),
-
-              // Results grid
-              Expanded(
-                child: Card(
-                  child: Padding(
                     padding: const EdgeInsets.all(16.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         const Text(
-                          'Turn-by-Turn Results',
+                          'Final Score:',
                           style: TextStyle(
-                            fontSize: 16,
+                            fontSize: 18,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-                        const SizedBox(height: 16),
-
-                        // 5x5 Results grid
-                        Expanded(
-                          child: LayoutBuilder(
-                            builder: (context, constraints) {
-                              // Calculate cell size based on available space
-                              final availableWidth = constraints.maxWidth;
-                              final cellSize = (availableWidth / 5).clamp(
-                                60.0,
-                                120.0,
-                              );
-
-                              return Center(
-                                child: SizedBox(
-                                  width: cellSize * 5,
-                                  height: cellSize * 5,
-                                  child: GridView.builder(
-                                    physics:
-                                        const NeverScrollableScrollPhysics(),
-                                    gridDelegate:
-                                        SliverGridDelegateWithFixedCrossAxisCount(
-                                          crossAxisCount: 5,
-                                          childAspectRatio: 1.0,
-                                          crossAxisSpacing: 2.0,
-                                          mainAxisSpacing: 2.0,
-                                        ),
-                                    itemCount: 25,
-                                    itemBuilder: (context, index) {
-                                      // Handle cases where we might have fewer than 25 results
-                                      if (index >= widget.gameResults.length) {
-                                        return _buildEmptyCell();
-                                      }
-
-                                      final result = widget.gameResults[index];
-                                      final userGuess = result[0];
-                                      final correctAnswer = result[1];
-                                      final isCorrect =
-                                          userGuess == correctAnswer;
-
-                                      return _buildResultCell(
-                                        turnNumber: index + 1,
-                                        userGuess: userGuess,
-                                        correctAnswer: correctAnswer,
-                                        isCorrect: isCorrect,
-                                      );
-                                    },
-                                  ),
-                                ),
-                              );
-                            },
+                        Text(
+                          '${widget.finalScore}/25',
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.blue,
                           ),
                         ),
                       ],
                     ),
                   ),
                 ),
-              ),
+                const SizedBox(height: 16),
 
-              // Action buttons section
-              const SizedBox(height: 16),
-              Column(
-                children: [
-                  // Play Again button
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: () => _handlePlayAgain(context),
-                      style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        elevation: 4,
-                        backgroundColor: Theme.of(context).colorScheme.primary,
-                        foregroundColor: Theme.of(
-                          context,
-                        ).colorScheme.onPrimary,
-                      ),
+                // Save status indicator
+                if (_isSaving || _saveError != null || _saveCompleted)
+                  Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(12.0),
                       child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.refresh, size: 20),
-                          const SizedBox(width: 8),
+                          if (_isSaving) ...[
+                            const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            ),
+                            const SizedBox(width: 12),
+                            const Text('Saving game data...'),
+                          ] else if (_saveError != null) ...[
+                            Icon(
+                              Icons.error_outline,
+                              color: Colors.red.shade600,
+                              size: 20,
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                _saveError!,
+                                style: TextStyle(color: Colors.red.shade700),
+                              ),
+                            ),
+                            TextButton(
+                              onPressed: _retrySave,
+                              child: const Text('Retry'),
+                            ),
+                          ] else if (_saveCompleted) ...[
+                            Icon(
+                              Icons.check_circle_outline,
+                              color: Colors.green.shade600,
+                              size: 20,
+                            ),
+                            const SizedBox(width: 12),
+                            const Text('Game data saved successfully'),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ),
+                if (_isSaving || _saveError != null || _saveCompleted)
+                  const SizedBox(height: 16),
+
+                // Results grid
+                Expanded(
+                  child: Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
                           const Text(
-                            'Play Again',
+                            'Turn-by-Turn Results',
                             style: TextStyle(
                               fontSize: 16,
-                              fontWeight: FontWeight.w600,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+
+                          // 5x5 Results grid
+                          Expanded(
+                            child: LayoutBuilder(
+                              builder: (context, constraints) {
+                                // Calculate cell size based on available space
+                                final availableWidth = constraints.maxWidth;
+                                final cellSize = (availableWidth / 5).clamp(
+                                  60.0,
+                                  120.0,
+                                );
+
+                                return Center(
+                                  child: SizedBox(
+                                    width: cellSize * 5,
+                                    height: cellSize * 5,
+                                    child: GridView.builder(
+                                      physics:
+                                          const NeverScrollableScrollPhysics(),
+                                      gridDelegate:
+                                          SliverGridDelegateWithFixedCrossAxisCount(
+                                            crossAxisCount: 5,
+                                            childAspectRatio: 1.0,
+                                            crossAxisSpacing: 2.0,
+                                            mainAxisSpacing: 2.0,
+                                          ),
+                                      itemCount: 25,
+                                      itemBuilder: (context, index) {
+                                        // Handle cases where we might have fewer than 25 results
+                                        if (index >=
+                                            widget.gameResults.length) {
+                                          return _buildEmptyCell();
+                                        }
+
+                                        final result =
+                                            widget.gameResults[index];
+                                        final userGuess = result[0];
+                                        final correctAnswer = result[1];
+                                        final isCorrect =
+                                            userGuess == correctAnswer;
+
+                                        return _buildResultCell(
+                                          turnNumber: index + 1,
+                                          userGuess: userGuess,
+                                          correctAnswer: correctAnswer,
+                                          isCorrect: isCorrect,
+                                        );
+                                      },
+                                    ),
+                                  ),
+                                );
+                              },
                             ),
                           ),
                         ],
                       ),
                     ),
                   ),
+                ),
 
-                  const SizedBox(height: 12),
-
-                  // Back to Main Menu button
-                  SizedBox(
-                    width: double.infinity,
-                    child: OutlinedButton(
-                      onPressed: () => _handleBackNavigation(context),
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        side: BorderSide(
-                          color: Theme.of(context).colorScheme.primary,
-                          width: 2,
-                        ),
-                        foregroundColor: Theme.of(context).colorScheme.primary,
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.home, size: 20),
-                          const SizedBox(width: 8),
-                          const Text(
-                            'Back to Main Menu',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                            ),
+                // Action buttons section
+                const SizedBox(height: 16),
+                Column(
+                  children: [
+                    // Play Again button
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: () => _handlePlayAgain(context),
+                        style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
                           ),
-                        ],
+                          elevation: 4,
+                          backgroundColor: Theme.of(
+                            context,
+                          ).colorScheme.primary,
+                          foregroundColor: Theme.of(
+                            context,
+                          ).colorScheme.onPrimary,
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.refresh, size: 20),
+                            const SizedBox(width: 8),
+                            const Text(
+                              'Play Again',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                  ),
-                ],
-              ),
-            ],
+
+                    const SizedBox(height: 12),
+
+                    // Back to Main Menu button
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton(
+                        onPressed: () => _handleBackNavigation(context),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          side: BorderSide(
+                            color: Theme.of(context).colorScheme.primary,
+                            width: 2,
+                          ),
+                          foregroundColor: Theme.of(
+                            context,
+                          ).colorScheme.primary,
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.home, size: 20),
+                            const SizedBox(width: 8),
+                            const Text(
+                              'Back to Main Menu',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
       ),
