@@ -324,6 +324,8 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
           onPressed: () {
             Navigator.pushNamed(context, '/stats-menu');
           },
+          containerColor: Theme.of(context).colorScheme.secondaryContainer,
+          onContainerColor: Theme.of(context).colorScheme.onSecondaryContainer,
         ),
         const SizedBox(height: 24),
 
@@ -336,6 +338,8 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
           onPressed: () {
             Navigator.pushNamed(context, '/options');
           },
+          containerColor: Theme.of(context).colorScheme.tertiaryContainer,
+          onContainerColor: Theme.of(context).colorScheme.onTertiaryContainer,
         ),
       ],
     );
@@ -413,9 +417,9 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
               ),
               const SizedBox(width: 8),
               Icon(
-                Icons.arrow_forward_ios,
-                color: colorScheme.onPrimary.withValues(alpha: 0.7),
-                size: 20,
+                Icons.chevron_right,
+                color: colorScheme.onPrimary.withValues(alpha: 0.9),
+                size: 22,
               ),
             ],
           ),
@@ -430,9 +434,13 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
     required String title,
     required String subtitle,
     required VoidCallback? onPressed,
+    Color? containerColor,
+    Color? onContainerColor,
   }) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final Color bg = containerColor ?? colorScheme.secondaryContainer;
+    final Color fg = onContainerColor ?? colorScheme.onSecondaryContainer;
 
     // Prevent overflow in secondary buttons as well.
     return ConstrainedBox(
@@ -444,10 +452,10 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
         child: OutlinedButton(
           onPressed: onPressed,
           style: OutlinedButton.styleFrom(
-            backgroundColor: colorScheme.surface,
-            foregroundColor: colorScheme.onSurface.withValues(alpha: 0.7),
+            backgroundColor: bg,
+            foregroundColor: fg,
             side: BorderSide(
-              color: colorScheme.outline.withValues(alpha: 0.5),
+              color: fg.withValues(alpha: 0.3),
               width: 1.5,
             ),
             shape: RoundedRectangleBorder(
@@ -461,13 +469,13 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: colorScheme.onSurface.withValues(alpha: 0.08),
+                  color: fg.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(
                   icon,
                   size: 28,
-                  color: colorScheme.onSurface.withValues(alpha: 0.65),
+                  color: fg.withValues(alpha: 0.85),
                 ),
               ),
               const SizedBox(width: 20),
@@ -482,7 +490,7 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
                       overflow: TextOverflow.ellipsis,
                       style: theme.textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.w600,
-                        color: colorScheme.onSurface.withValues(alpha: 0.75),
+                        color: fg,
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -493,7 +501,7 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
                       overflow: TextOverflow.fade,
                       style: theme.textTheme.bodyMedium?.copyWith(
                         height: 1.2,
-                        color: colorScheme.onSurface.withValues(alpha: 0.5),
+                        color: fg.withValues(alpha: 0.75),
                         fontStyle: FontStyle.italic,
                       ),
                     ),
@@ -502,11 +510,9 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
               ),
               const SizedBox(width: 8),
               Icon(
-                SupabaseService.isSignedIn
-                    ? Icons.logout
-                    : Icons.arrow_forward_ios,
-                color: colorScheme.onSurface.withValues(alpha: 0.5),
-                size: 20,
+                Icons.chevron_right,
+                color: fg.withValues(alpha: 0.9),
+                size: 22,
               ),
             ],
           ),
