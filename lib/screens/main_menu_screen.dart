@@ -313,7 +313,7 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
           context: context,
           icon: Icons.settings,
           title: 'Options',
-          subtitle: 'Account / scores etc.',
+          subtitle: 'Login / Logout etc.',
           onPressed: () {
             Navigator.pushNamed(context, '/options');
           },
@@ -1015,7 +1015,8 @@ class _AnimatedSunIconState extends State<_AnimatedSunIcon>
         // Rotate continuously
         final angle = _controller.value * 6.283185307179586; // 2*pi
         // Pulse color between yellow and orange
-        final t = (0.5 - (0.5 - _controller.value).abs()) * 2.0; // 0->1->0 triangle
+        final t =
+            (0.5 - (0.5 - _controller.value).abs()) * 2.0; // 0->1->0 triangle
         final color = Color.lerp(_sunYellow, _sunOrange, t);
 
         return Transform.rotate(
@@ -1034,11 +1035,7 @@ class _AnimatedSunIconState extends State<_AnimatedSunIcon>
                 ),
               ],
             ),
-            child: Icon(
-              Icons.wb_sunny,
-              color: color,
-              size: widget.size,
-            ),
+            child: Icon(Icons.wb_sunny, color: color, size: widget.size),
           ),
         );
       },
