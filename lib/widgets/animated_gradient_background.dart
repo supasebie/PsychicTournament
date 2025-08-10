@@ -108,7 +108,22 @@ class _AnimatedGradientBackgroundState extends State<AnimatedGradientBackground>
                       painter: _StarfieldPainter(
                         color: scheme.onSurface.withValues(alpha: 0.7),
                         t: _t.value,
-                        count: 192,
+                        count: 384,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              // Sparkle twinkle overlay for a subset of stars
+              Positioned.fill(
+                child: IgnorePointer(
+                  child: RepaintBoundary(
+                    child: CustomPaint(
+                      painter: _TwinkleSparklePainter(
+                        color: scheme.onSurface,
+                        timeMs: timeMs,
+                        count: 96,
+                        seed: 2025,
                       ),
                     ),
                   ),
@@ -315,6 +330,100 @@ class _NeonGlowPainter extends CustomPainter {
   }
 }
 
+class _TwinkleSparklePainter extends CustomPainter {
+  final Color color;
+  final int timeMs;
+  final int count;
+  final int seed;
+
+  _TwinkleSparklePainter({
+    required this.color,
+    required this.timeMs,
+    this.count = 72,
+    this.seed = 2025,
+  });
+
+  double _hashDouble(int i) {
+    final double s = math.sin((i + seed) * 12.9898) * 43758.5453;
+    return s - s.floor();
+  }
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final Paint p = Paint()
+      ..style = PaintingStyle.fill
+      ..blendMode = BlendMode.plus; // add glow nicely
+
+    final double w = size.width;
+    final double h = size.height;
+
+    // Time in seconds
+    final double t = timeMs / 1000.0;
+    final int sec = t.floor();
+
+    // Roughly 2 events per minute on average
+    const double eventsPerMinute = 4.0;
+    const double pPerSecond = eventsPerMinute / 60.0; // ≈ 0.0333
+
+    // Deterministic RNG per second to decide if a twinkle occurs and which star
+    final double r = _hashDouble(sec + 100003);
+    final bool twinkleNow = r < pPerSecond;
+
+    if (!twinkleNow) return; // Nothing to draw this frame
+
+    // Pick a random star index for this second
+    int idx = (count * _hashDouble(sec * 7 + 2027)).floor();
+    if (idx < 0) idx = 0;
+    if (idx >= count) idx = count - 1;
+
+    // Position for the chosen star (same distribution as starfield)
+    final double rx = (_hashDouble(idx) + 0.5 * _hashDouble(idx + 97)) % 1.0;
+    final double ry =
+        (_hashDouble(idx + 13) + 0.5 * _hashDouble(idx + 131)) % 1.0;
+    final double x = rx * w;
+    final double y = 0.08 * h + ry * (0.88 * h);
+
+    // Short flash duration within the current second
+    const double duration = 0.8; // seconds
+    final double frac = t - sec; // 0..1 within this second
+    if (frac > duration) return;
+
+    // Smooth in/out pulse curve
+    final double u = frac / duration; // 0..1
+    final double intensity = math
+        .pow(math.sin(u * math.pi).clamp(0.0, 1.0), 3)
+        .toDouble();
+
+    // Size and alpha scale with intensity
+    final double baseSize = 0.9 + 1.1 * _hashDouble(idx + 211);
+    final double radius = baseSize * (1.0 + 1.8 * intensity);
+
+    // Core point glow
+    p.color = color.withValues(alpha: (0.18 + 0.42 * intensity));
+    canvas.drawCircle(Offset(x, y), radius, p);
+
+    // Tiny cross sparkle
+    final Paint line = Paint()
+      ..color = color.withValues(alpha: (0.10 + 0.35 * intensity))
+      ..strokeCap = StrokeCap.round
+      ..strokeWidth = 1.2 + 1.8 * intensity
+      ..style = PaintingStyle.stroke
+      ..blendMode = BlendMode.plus;
+
+    final double len = 4.0 + 10.0 * intensity;
+    canvas.drawLine(Offset(x - len, y), Offset(x + len, y), line);
+    canvas.drawLine(Offset(x, y - len), Offset(x, y + len), line);
+  }
+
+  @override
+  bool shouldRepaint(covariant _TwinkleSparklePainter oldDelegate) {
+    return oldDelegate.timeMs != timeMs ||
+        oldDelegate.color != color ||
+        oldDelegate.count != count ||
+        oldDelegate.seed != seed;
+  }
+}
+
 class _ShootingStarPainter extends CustomPainter {
   final Color color;
   final int timeMs;
@@ -338,9 +447,9 @@ class _ShootingStarPainter extends CustomPainter {
     final int epoch = timeMs ~/ periodMs;
     final double phase = ((timeMs % periodMs) / periodMs);
 
-    // Only render a shooting star in some epochs (about 1/3 probability)
+    // Only render a shooting star in some epochs (about 2/3 probability for higher frequency)
     final double chance = _hashDouble(epoch);
-    if (chance > 0.333) {
+    if (chance > 0.666) {
       return; // no shooting star this epoch
     }
 
@@ -372,11 +481,6 @@ class _ShootingStarPainter extends CustomPainter {
     final Offset pos = start + dir * p;
 
     // Trail parameters
-    final double speedPx =
-        dir.distance /
-        (windowLen *
-            periodMs /
-            1000.0); // pixels per second (unused but indicative)
     final Offset unitDir = dir / dir.distance;
     final double mainLen = 80.0 + 60.0 * _hashDouble(epoch + 53);
     final double tailLen = mainLen * (0.6 + 0.3 * (1.0 - p));
