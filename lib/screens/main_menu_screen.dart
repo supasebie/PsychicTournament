@@ -156,20 +156,11 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
                           horizontal: 32.0,
                           vertical: 16.0,
                         ),
-                        child: GlassContainer(
+                        child: Padding(
                           padding: const EdgeInsets.symmetric(
                             vertical: 20,
                             horizontal: 16,
                           ),
-                          borderGradient: LinearGradient(
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                            colors: [
-                              colorScheme.primary.withValues(alpha: 0.9),
-                              colorScheme.secondary.withValues(alpha: 0.9),
-                            ],
-                          ),
-                          borderWidth: 1.0,
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
                             children: [
@@ -220,21 +211,11 @@ class _MainMenuScreenState extends State<MainMenuScreen> {
                         padding: EdgeInsets.symmetric(horizontal: 32.0),
                         child: _ScoreboardsCard(),
                       ),
+                      const SizedBox(height: 24),
                       // Navigation Section - intrinsic height inside scroll view
                       Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 32.0),
-                        child: GlassContainer(
-                          padding: const EdgeInsets.all(20),
-                          borderRadius: 20,
-                          tintOpacity: 0.65,
-                          borderGradient: LinearGradient(
-                            colors: [
-                              colorScheme.primary.withValues(alpha: 0.75),
-                              colorScheme.secondary.withValues(alpha: 0.75),
-                            ],
-                          ),
-                          child: _buildResponsiveNavigationSection(context),
-                        ),
+                        padding: const EdgeInsets.fromLTRB(32.0, 0, 32.0, 16.0),
+                        child: _buildResponsiveNavigationSection(context),
                       ),
                       // Footer text (chip) - intrinsic height
                       // Padding(
