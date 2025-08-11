@@ -121,11 +121,7 @@ class _GameStatisticsScreenState extends State<GameStatisticsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: AnimatedGradientBackground(
-        child: SafeArea(
-          child: _buildBody(),
-        ),
-      ),
+      body: AnimatedGradientBackground(child: SafeArea(child: _buildBody())),
     );
   }
 
@@ -217,7 +213,7 @@ class _GameStatisticsScreenState extends State<GameStatisticsScreen> {
             ),
             const SizedBox(height: 24),
             ElevatedButton.icon(
-              onPressed: () => Navigator.of(context).pop(),
+              onPressed: () => Navigator.of(context).pushNamed('/zener-game'),
               icon: const Icon(Icons.play_arrow),
               label: const Text('Start Playing'),
             ),
@@ -1008,7 +1004,7 @@ class _GameStatisticsScreenState extends State<GameStatisticsScreen> {
 
   /// Get color based on hit rate performance
   Color _getHitRateColor(double hitRate) {
-    if (hitRate >= 25) return Colors.green;
+    if (hitRate >= 30) return Colors.green;
     if (hitRate >= 20) return Colors.blue;
     if (hitRate >= 15) return Colors.orange;
     return Colors.red;

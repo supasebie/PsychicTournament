@@ -320,29 +320,39 @@ class _GameHistoryScreenState extends State<GameHistoryScreen> {
     );
   }
 
-  /// Build the empty state when no sessions exist
+  /// Build the empty state when no sessions exist (match GameStatisticsScreen)
   Widget _buildEmptyState() {
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.history, size: 64, color: Theme.of(context).disabledColor),
-          const SizedBox(height: 16),
-          Text(
-            'No Game History',
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-              color: Theme.of(context).disabledColor,
+      child: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.analytics_outlined,
+              size: 64,
+              color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.6),
             ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Play some games to see your history here!',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: Theme.of(context).disabledColor,
+            const SizedBox(height: 16),
+            Text(
+              'No Games Played Yet',
+              style: Theme.of(context).textTheme.headlineSmall,
+              textAlign: TextAlign.center,
             ),
-            textAlign: TextAlign.center,
-          ),
-        ],
+            const SizedBox(height: 8),
+            Text(
+              'Play some games to see your statistics and performance trends.',
+              style: Theme.of(context).textTheme.bodyMedium,
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton.icon(
+              onPressed: () => Navigator.of(context).pushNamed('/zener-game'),
+              icon: const Icon(Icons.play_arrow),
+              label: const Text('Start Playing'),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -385,18 +395,10 @@ class _GameHistoryScreenState extends State<GameHistoryScreen> {
     );
   }
 
-  /// Build the loading state
+  /// Build the loading state (match GameStatisticsScreen behavior)
   Widget _buildLoadingState() {
-    return const Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          CircularProgressIndicator(),
-          SizedBox(height: 16),
-          Text('Loading game history...'),
-        ],
-      ),
-    );
+    // Show only the spinner to avoid layout/jank from early text flashes.
+    return const Center(child: CircularProgressIndicator());
   }
 
   /// Build the pagination controls (Load More button)
