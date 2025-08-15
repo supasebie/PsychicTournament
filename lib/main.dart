@@ -8,6 +8,7 @@ import 'screens/game_statistics_screen.dart';
 import 'screens/session_detail_screen.dart';
 import 'screens/stats_menu_screen.dart';
 import 'screens/options_screen.dart';
+import 'screens/info_screen.dart';
 import 'services/supabase_service.dart';
 import 'database/models/game_session.dart';
 
@@ -60,6 +61,7 @@ class PsychicTournament extends StatelessWidget {
   static const String sessionDetailRoute = '/session-detail';
   static const String statsMenuRoute = '/stats-menu';
   static const String optionsRoute = '/options';
+  static const String infoRoute = '/info';
 
   @override
   Widget build(BuildContext context) {
@@ -74,6 +76,7 @@ class PsychicTournament extends StatelessWidget {
         gameStatisticsRoute: (context) => const GameStatisticsScreen(),
         statsMenuRoute: (context) => const PerformanceMenuScreen(),
         optionsRoute: (context) => const OptionsScreen(),
+        infoRoute: (context) => const InfoScreen(),
       },
       onGenerateRoute: (settings) {
         // Handle routes that require parameters

@@ -181,7 +181,7 @@ class _ShimmerSweepPainter extends CustomPainter {
     // Position progresses from -0.5 to 1.5 to ensure full pass off-screen.
     // Multiply time to slow the sweep frequency further if needed.
     final double p =
-        (t) * 2.0 - 0.5; // -0.5..1.5 (full sweep per controller cycle)
+        (t) * 3.0 - 0.5; // -0.5..1.5 (full sweep per controller cycle)
 
     // Shimmer band thickness relative to diagonal length
     final double band = (math.sqrt(w * w + h * h)) * 0.22;
@@ -358,7 +358,7 @@ class _TwinkleSparklePainter extends CustomPainter {
     final double h = size.height;
 
     // Time in seconds
-    final double t = timeMs / 1000.0;
+    final double t = timeMs / 500.0;
     final int sec = t.floor();
 
     // Roughly 2 events per minute on average

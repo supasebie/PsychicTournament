@@ -30,6 +30,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_markdown: ^0.7.3
 
   # UI and animations
   google_fonts: ^6.2.1
@@ -75,7 +76,8 @@ flutter:
 
   # Zener SVG assets
   assets:
-    - assets/zener/circle.svg
+    - assets/zener/
+    - StatsData.md
     - assets/zener/plus.svg
     - assets/zener/waves.svg
     - assets/zener/square.svg

@@ -133,6 +133,15 @@ class OptionsScreen extends StatelessWidget {
                         }
                       },
                     ),
+                    const SizedBox(height: 20),
+                    _OptionsMenuButton(
+                      icon: Icons.info_outline,
+                      title: 'Info',
+                      subtitle: 'Understanding the statistics and methodology',
+                      onPressed: () {
+                        Navigator.pushNamed(context, '/info');
+                      },
+                    ),
                   ],
                 ),
               ),

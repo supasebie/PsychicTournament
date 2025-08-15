@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'dart:math' as math;
 import '../database/models/game_statistics.dart';
 import '../database/services/game_statistics_service.dart';
 import '../database/database_exceptions.dart';
@@ -813,10 +814,219 @@ class _GameStatisticsScreenState extends State<GameStatisticsScreen> {
             _buildHitRateIndicator(),
             const SizedBox(height: 16),
             _buildPerformanceInsights(),
+            const SizedBox(height: 16),
+            _buildSignificanceSection(),
           ],
         ),
       ),
     );
+  }
+
+  /// Build significance section leveraging binomial math (n=25, p=0.2)
+  Widget _buildSignificanceSection() {
+    const nPerGame = 25;
+    const p = 0.2;
+
+    final best = _statistics!.bestScore;
+    final totalTurns = _statistics!.totalTurns;
+    final totalHits = _statistics!.totalHits;
+
+    // Exact tail probability for a single 25-card game achieving >= best
+    final pBest = _binomialTail(nPerGame, p, best);
+    final zBest = (best - (nPerGame * p)) / math.sqrt(nPerGame * p * (1 - p));
+
+    // Exact tail probability for cumulative performance across all turns
+    final pOverall = _binomialTail(totalTurns, p, totalHits);
+    final zOverall =
+        (totalHits - (totalTurns * p)) / math.sqrt(totalTurns * p * (1 - p));
+
+    final tier = _tierForBestScore(best);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Significance (Beyond Chance)',
+          style: Theme.of(context).textTheme.titleLarge,
+        ),
+        const SizedBox(height: 12),
+        _buildSignificanceRow(
+          title: 'Best Score (${best}/25)',
+          zScore: zBest,
+          pValue: pBest,
+          odds: _formatOdds(pBest),
+          tier: tier,
+        ),
+        const SizedBox(height: 10),
+        _buildSignificanceRow(
+          title:
+              'Overall (${totalHits} hits over ${totalTurns} turns, expected ${(totalTurns * p).toStringAsFixed(1)})',
+          zScore: zOverall,
+          pValue: pOverall,
+          odds: _formatOdds(pOverall),
+          tier: null,
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'Assumes independent random guessing (binomial: n=25, p=0.2 per guess).',
+          style: Theme.of(context).textTheme.bodySmall,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSignificanceRow({
+    required String title,
+    required double zScore,
+    required double pValue,
+    required String odds,
+    String? tier,
+  }) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final zText = zScore.isFinite ? zScore.toStringAsFixed(2) : '—';
+    final pText = _formatPValue(pValue);
+
+    return Container(
+      padding: const EdgeInsets.all(12.0),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
+        borderRadius: BorderRadius.circular(8.0),
+        border: Border.all(color: colorScheme.outline.withValues(alpha: 0.3)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title, style: Theme.of(context).textTheme.titleMedium),
+                const SizedBox(height: 6),
+                Wrap(
+                  spacing: 12,
+                  runSpacing: 8,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    _miniStatChip('z-score', zText),
+                    _miniStatChip('p-value', pText),
+                    _miniStatChip('odds', odds),
+                    if (tier != null)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          vertical: 6,
+                          horizontal: 10,
+                        ),
+                        decoration: BoxDecoration(
+                          color: colorScheme.primary.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(
+                            color: colorScheme.primary.withValues(alpha: 0.35),
+                          ),
+                        ),
+                        child: Text(
+                          tier,
+                          style: Theme.of(context).textTheme.labelLarge
+                              ?.copyWith(
+                                color: colorScheme.primary,
+                                fontWeight: FontWeight.w700,
+                              ),
+                        ),
+                      ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _miniStatChip(String label, String value) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 10),
+      decoration: BoxDecoration(
+        color: colorScheme.onSurface.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: colorScheme.outline.withValues(alpha: 0.25)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            '$label: ',
+            style: Theme.of(context).textTheme.labelLarge?.copyWith(
+              color: colorScheme.onSurface.withValues(alpha: 0.7),
+            ),
+          ),
+          Text(
+            value,
+            style: Theme.of(
+              context,
+            ).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w700),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Compute binomial tail probability P(X >= k) for X~Bin(n,p) using a stable
+  // recursive PMF relation. Suitable for n up to several thousands.
+  double _binomialTail(int n, double p, int k) {
+    if (k <= 0) return 1.0;
+    if (k > n) return 0.0;
+    if (n <= 0) return 0.0;
+    final q = 1.0 - p;
+
+    // pmf(0) = q^n
+    double pmf = math.pow(q, n).toDouble();
+
+    // Move to pmf(k)
+    for (int x = 1; x <= k; x++) {
+      pmf = pmf * (n - (x - 1)) / x * (p / q);
+    }
+    double tail = pmf;
+
+    // Accumulate pmf(k+1..n)
+    for (int x = k + 1; x <= n; x++) {
+      pmf = pmf * (n - (x - 1)) / x * (p / q);
+      tail += pmf;
+    }
+    // Clamp numerical noise
+    if (tail < 0) tail = 0;
+    if (tail > 1) tail = 1;
+    return tail;
+  }
+
+  String _formatPValue(double p) {
+    if (!p.isFinite || p <= 0) return '< 1e-16';
+    if (p < 1e-6) {
+      final exp = (math.log(p) / math.ln10).floor();
+      final mantissa = p / math.pow(10, exp);
+      return '${mantissa.toStringAsFixed(2)}e${exp}';
+    }
+    if (p < 0.001) return p.toStringAsExponential(2);
+    return p.toStringAsFixed(4);
+  }
+
+  String _formatOdds(double p) {
+    if (!p.isFinite || p <= 0) return '>=1 in 1e16';
+    final inv = 1.0 / p;
+    if (inv > 1e6) {
+      final exp = (math.log(inv) / math.ln10).floor();
+      final mantissa = inv / math.pow(10, exp);
+      return '${mantissa.toStringAsFixed(2)}e${exp}';
+    }
+    if (inv >= 1000) return inv.toStringAsFixed(0);
+    return '1 in ${inv.round()}';
+  }
+
+  String _tierForBestScore(int score) {
+    if (score >= 15) return 'Tier 4: Astronomically Improbable';
+    if (score >= 12) return 'Tier 3: Statistically Significant';
+    if (score >= 9) return 'Tier 2: Noteworthy Deviation';
+    return 'Tier 1: Randomness Domain';
   }
 
   /// Build detailed statistics section
