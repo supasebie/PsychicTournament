@@ -37,6 +37,9 @@ class _ZenerGameScreenState extends State<ZenerGameScreen> {
   bool _isCardRevealed = false;
   bool _debugMode = false;
 
+  // Hot streak tracking: number of consecutive correct guesses
+  int _currentStreak = 0;
+
   // Enhanced feedback overlay state variables
   bool _showFeedbackOverlay = false;
   String _overlayFeedbackText = '';
@@ -97,6 +100,8 @@ class _ZenerGameScreenState extends State<ZenerGameScreen> {
         _showFeedbackOverlay = false;
         _overlayFeedbackText = '';
         _isCorrectGuess = false;
+        // Reset hot streak state
+        _currentStreak = 0;
         // Note: _debugMode is intentionally not reset to preserve user preference
       });
     } catch (e) {
@@ -138,6 +143,13 @@ class _ZenerGameScreenState extends State<ZenerGameScreen> {
         _revealedSymbol = result.correctSymbol;
         _isCardRevealed = true;
       });
+
+      // Update hot streak before showing feedback
+      if (result.isCorrect) {
+        _currentStreak += 1;
+      } else {
+        _currentStreak = 0;
+      }
 
       // Show enhanced feedback overlay
       _showEnhancedFeedback(result);
@@ -221,7 +233,9 @@ class _ZenerGameScreenState extends State<ZenerGameScreen> {
       // Update overlay state variables
       setState(() {
         _showFeedbackOverlay = true;
-        _overlayFeedbackText = result.isCorrect ? 'Hit!' : 'Miss';
+        _overlayFeedbackText = result.isCorrect
+            ? _getStreakMessage(_currentStreak)
+            : 'Miss';
         _isCorrectGuess = result.isCorrect;
       });
 
@@ -285,6 +299,15 @@ class _ZenerGameScreenState extends State<ZenerGameScreen> {
       // Haptic feedback is non-critical, so we just log and continue
       debugPrint('Haptic feedback error: $e');
     }
+  }
+
+  /// Returns the overlay message based on the current hot streak
+  String _getStreakMessage(int streak) {
+    if (streak <= 1) return 'Hit!';
+    if (streak == 3) return 'Amazing!';
+    if (streak == 7) return 'Visionary!';
+    // if (streak <= 5) return 'Hot streak! ($streak)';
+    return 'Hit!';
   }
 
   /// Starts the turn transition timer with improved timing sequence
@@ -626,50 +649,50 @@ class _ZenerGameScreenState extends State<ZenerGameScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // appBar: AppBar(
-      //   title: AnimatedDefaultTextStyle(
-      //     duration: const Duration(milliseconds: 300),
-      //     style: const TextStyle(fontWeight: FontWeight.bold),
-      //     child: const Text('Psychic Tournament'),
-      //   ),
-      //   backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-      //   foregroundColor: Theme.of(context).colorScheme.onPrimaryContainer,
-      //   elevation: 0,
-      //   centerTitle: true,
-      //   actions: [
-      //     // Debug mode toggle with animation
-      //     Padding(
-      //       padding: const EdgeInsets.only(right: 8.0),
-      //       child: Row(
-      //         mainAxisSize: MainAxisSize.min,
-      //         children: [
-      //           AnimatedContainer(
-      //             duration: const Duration(milliseconds: 200),
-      //             child: Icon(
-      //               Icons.bug_report,
-      //               size: 16,
-      //               color: _debugMode
-      //                   ? Colors.red.shade700
-      //                   : Theme.of(context).colorScheme.onPrimaryContainer
-      //                         .withValues(alpha: 0.6),
-      //             ),
-      //           ),
-      //           const SizedBox(width: 4),
-      //           AnimatedSwitcher(
-      //             duration: const Duration(milliseconds: 200),
-      //             child: Switch(
-      //               key: ValueKey(_debugMode),
-      //               value: _debugMode,
-      //               onChanged: (_) => _toggleDebugMode(),
-      //               materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-      //               // activeThumbColor: Colors.red.shade700,
-      //             ),
-      //           ),
-      //         ],
-      //       ),
-      //     ),
-      //   ],
-      // ),
+      appBar: AppBar(
+        title: AnimatedDefaultTextStyle(
+          duration: const Duration(milliseconds: 300),
+          style: const TextStyle(fontWeight: FontWeight.bold),
+          child: const Text('Psychic Tournament'),
+        ),
+        backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+        foregroundColor: Theme.of(context).colorScheme.onPrimaryContainer,
+        elevation: 0,
+        centerTitle: true,
+        actions: [
+          // Debug mode toggle with animation
+          Padding(
+            padding: const EdgeInsets.only(right: 8.0),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  child: Icon(
+                    Icons.bug_report,
+                    size: 16,
+                    color: _debugMode
+                        ? Colors.red.shade700
+                        : Theme.of(context).colorScheme.onPrimaryContainer
+                              .withValues(alpha: 0.6),
+                  ),
+                ),
+                const SizedBox(width: 4),
+                AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 200),
+                  child: Switch(
+                    key: ValueKey(_debugMode),
+                    value: _debugMode,
+                    onChanged: (_) => _toggleDebugMode(),
+                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    // activeThumbColor: Colors.red.shade700,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
       body: AnimatedGradientBackground(
         child: SafeArea(
           child: Stack(

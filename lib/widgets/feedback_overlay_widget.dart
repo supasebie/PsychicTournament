@@ -144,10 +144,11 @@ class _FeedbackOverlayState extends State<FeedbackOverlay>
   /// Returns the text color based on whether the guess was correct
   Color _getTextColor() {
     // Fallback solid color (used for shadows/glow computation)
-    return widget.isCorrect ? const Color(0xFFFFD700) : const Color(0xFFF44336);
+    // Use a dark red for incorrect guesses per design request
+    return widget.isCorrect ? const Color(0xFFFFD700) : const Color(0xFF8B0000);
   }
 
-  /// Builds glowing gradient text. Uses a gold gradient when correct; red/orange when incorrect.
+  /// Builds glowing gradient text. Uses a gold gradient when correct; solid dark red when incorrect.
   Widget _buildGlowingText(String text, bool isCorrect) {
     final List<Color> gradientColors = isCorrect
         ? const [
@@ -156,9 +157,10 @@ class _FeedbackOverlayState extends State<FeedbackOverlay>
             Color(0xFFD4AF37), // metallic gold
           ]
         : const [
-            Color(0xFFFFC2C2), // pale red highlight
-            Color(0xFFFF6B6B), // red
-            Color(0xFFB00020), // deep red
+            // Solid dark red across the entire text for misses
+            Color(0xFF8B0000),
+            Color(0xFF8B0000),
+            Color(0xFF8B0000),
           ];
 
     final baseColor = _getTextColor();
