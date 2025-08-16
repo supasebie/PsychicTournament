@@ -65,7 +65,7 @@ class _ZenerGameScreenState extends State<ZenerGameScreen>
     super.initState();
     _shakeController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 450),
+      duration: const Duration(milliseconds: 175),
     );
     _initializeGame();
     // Preload interstitial for end-of-session.
@@ -716,7 +716,8 @@ class _ZenerGameScreenState extends State<ZenerGameScreen>
             builder: (context, child) {
               // Damped shake: decays over the duration
               final t = _shakeController.value; // 0.0 -> 1.0
-              const amplitude = 10.0; // pixels
+              final amplitude =
+                  _computeShakeAmplitude(); // pixels, scales with streak
               final decay = (1.0 - t);
               final dx = math.sin(t * math.pi * 16) * amplitude * decay;
               final dy = math.cos(t * math.pi * 9) * amplitude * 0.25 * decay;
@@ -1031,10 +1032,35 @@ class _ZenerGameScreenState extends State<ZenerGameScreen>
   // Starts a short damped shake animation
   void _triggerScreenShake() {
     try {
+      // Update duration based on current streak before starting
+      _shakeController.duration = _computeShakeDuration();
       _shakeController.forward(from: 0.0);
     } catch (e) {
       debugPrint('Error starting screen shake: $e');
     }
+  }
+
+  // Computes shake amplitude that starts very mild and increases with streak
+  double _computeShakeAmplitude() {
+    const double base = .1; // very mild initial shake
+    const double max = 18.0; // cap to avoid excessive movement
+    final int cappedStreak = _currentStreak.clamp(0, 10);
+    final double t = cappedStreak / 10.0; // 0..1
+    // Ease-out cubic for a smooth, natural ramp-up
+    final double eased = 1 - math.pow(1 - t, 3).toDouble();
+    return base + (max - base) * eased;
+  }
+
+  // Computes shake duration that starts very low and increases with streak
+  Duration _computeShakeDuration() {
+    const int minMs = 85; // very short initial shake duration
+    const int maxMs = 750; // comfortable upper bound
+    final int cappedStreak = _currentStreak.clamp(0, 10);
+    final double t = cappedStreak / 10.0; // 0..1
+    // Ease-out to feel responsive early, stretching more as streak grows
+    final double eased = 1 - math.pow(1 - t, 2).toDouble();
+    final int ms = (minMs + (maxMs - minMs) * eased).round();
+    return Duration(milliseconds: ms);
   }
 
   // ---------------- Ad helpers: Interstitial after session end ----------------
